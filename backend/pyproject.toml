@@ -10,10 +10,16 @@ dependencies = [
     "fastapi (==0.115.0)",
     "uvicorn[standard] (>=0.41.0,<0.42.0)",
     "pydantic (==2.9.2)",
-    "sqlalchemy (==2.0.35)"
+    "sqlalchemy (==2.0.35)",
+    "aiosqlite (>=0.22.1,<0.23.0)"
 ]
 
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "alembic (==1.16.2)"
+]
