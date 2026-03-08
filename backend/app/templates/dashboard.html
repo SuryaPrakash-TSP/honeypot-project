@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Honeypot Dashboard - Recent Attacks</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background: #1a1a1a; color: #fff; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .stats { background: #2d2d2d; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        table { border-collapse: collapse; width: 100%; background: #2d2d2d; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        th { background: #333; padding: 12px; text-align: left; font-weight: 600; }
+        td { padding: 12px; border-bottom: 1px solid #444; }
+        tr:hover { background: #363636; }
+        .ip { font-family: monospace; }
+        .time { font-size: 0.9em; color: #aaa; }
+        .low { color: #4CAF50; }
+        .medium { color: #FF9800; }
+        .high { color: #f44336; }
+        .web { color: #2196F3; }
+        .details { font-family: monospace; font-size: 0.9em; }
+        a { color: #4CAF50; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🛡️ Honeypot Attack Dashboard</h1>
+        <div class="stats">
+            <strong>Total Recent Events: {{ total_events }}</strong> | 
+            <a href="/login">← Login Trap</a> | 
+            <a href="/events">JSON API</a>
+        </div>
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>IP</th>
+                <th>Type</th>
+                <th>Time</th>
+                <th>Username/Password</th>
+                <th>Command</th>
+                <th>Severity</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for event in events %}
+            <tr>
+                <td>{{ event.id }}</td>
+                <td class="ip">{{ event.source_ip or 'N/A' }}</td>
+                <td class="web">{{ event.event_type }}</td>
+                <td class="time">{{ event.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                <td class="details">{{ event.username or '' }} / {{ event.password or '' }}</td>
+                <td class="details">{{ event.command or '' }}</td>
+                <td class="{{ event.severity }}">{{ event.severity.upper() }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

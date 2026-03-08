@@ -19,7 +19,7 @@ def get_db():
     finally:
         db.close()
 
-app = FastAPI(title="Honeypot v2 - Web Trap Live", version="0.2.0")
+app = FastAPI(title="Honeypot v3 - Dashboard LIVE", version="0.3.0")
 templates = Jinja2Templates(directory="app/templates")
 
 app.add_middleware(
@@ -32,9 +32,16 @@ app.add_middleware(
 
 Base.metadata.create_all(bind=engine)
 
+# Phase 3: Dashboard helper function
+def get_recent_events(db: Session = Depends(get_db), limit: int = 20):
+    return db.query(Event).order_by(Event.timestamp.desc()).limit(limit).all()
+
 @app.get("/")
 async def health():
-    return {"status": "Phase 2 Web Honeypot LIVE ✅", "db": DATABASE_URL}
+    db = SessionLocal()
+    event_count = db.query(Event).count()
+    db.close()
+    return {"status": "Phase 3 Dashboard LIVE ✅", "db": DATABASE_URL, "events": event_count}
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_get(request: Request):
@@ -47,7 +54,7 @@ async def login_post(request: Request, username: str = Form(...), password: str 
 
     db = SessionLocal()
     event = Event()
-    event.source_ip = client_ip  # Matches your DB schema
+    event.source_ip = client_ip
     event.username = username
     event.password = password
     event.command = f"web_login attempt"
@@ -65,3 +72,13 @@ async def login_post(request: Request, username: str = Form(...), password: str 
 async def list_events(db: Session = Depends(get_db)):
     events = db.query(Event).order_by(Event.timestamp.desc()).limit(10).all()
     return {"events": [e.__dict__ for e in events]}
+
+# PHASE 3 DASHBOARD ✅
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard(request: Request, db: Session = Depends(get_db)):
+    events = db.query(Event).order_by(Event.timestamp.desc()).limit(20).all()
+    return templates.TemplateResponse("dashboard.html", {
+        "request": request, 
+        "events": events,
+        "total_events": len(events)
+    })
