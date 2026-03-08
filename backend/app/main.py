@@ -1,20 +1,26 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Form, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from app.models.event import Base
+from sqlalchemy.orm import sessionmaker, Session
+from app.models.event import Base, Event
+from datetime import datetime
 
-# Simple SQLite (sync)
+# DB
 DATABASE_URL = "sqlite:///../data/events.db"
 engine = create_engine(DATABASE_URL, echo=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-app = FastAPI(title="Honeypot Backend v1", version="0.1.0")
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
-# Jinja2 templates setup
-templates = Jinja2Templates(directory="app/templates")  # Note: "app/templates"
+app = FastAPI(title="Honeypot v2 - Web Trap Live", version="0.2.0")
+templates = Jinja2Templates(directory="app/templates")
 
 app.add_middleware(
     CORSMiddleware,
@@ -24,17 +30,38 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Create tables on startup
 Base.metadata.create_all(bind=engine)
 
 @app.get("/")
 async def health():
-    return {"status": "Phase 1 Backend + DB Ready", "db": DATABASE_URL}
+    return {"status": "Phase 2 Web Honeypot LIVE ✅", "db": DATABASE_URL}
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_get(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
+@app.post("/login", response_class=HTMLResponse)
+async def login_post(request: Request, username: str = Form(...), password: str = Form(...)):
+    client_ip = request.client.host
+    session_id = f"web_login_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+
+    db = SessionLocal()
+    event = Event()
+    event.source_ip = client_ip  # Matches your DB schema
+    event.username = username
+    event.password = password
+    event.command = f"web_login attempt"
+    event.session_id = session_id
+    event.event_type = "web"
+    event.severity = "low"
+    event.timestamp = datetime.now()
+    db.add(event)
+    db.commit()
+    db.close()
+
+    return templates.TemplateResponse("login.html", {"request": request})
+
 @app.get("/events")
-async def list_events():
-    return {"events": [], "message": "Event storage ready"}
+async def list_events(db: Session = Depends(get_db)):
+    events = db.query(Event).order_by(Event.timestamp.desc()).limit(10).all()
+    return {"events": [e.__dict__ for e in events]}
