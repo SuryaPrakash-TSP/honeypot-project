@@ -1,61 +1,61 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Honeypot Dashboard - Recent Attacks</title>
+    <title>Honeypot Phase 5 - Unified Dashboard</title>
+    <meta http-equiv="refresh" content="30">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background: #1a1a1a; color: #fff; }
-        .header { text-align: center; margin-bottom: 30px; }
-        .stats { background: #2d2d2d; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-        table { border-collapse: collapse; width: 100%; background: #2d2d2d; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        th { background: #333; padding: 12px; text-align: left; font-weight: 600; }
-        td { padding: 12px; border-bottom: 1px solid #444; }
-        tr:hover { background: #363636; }
-        .ip { font-family: monospace; }
-        .time { font-size: 0.9em; color: #aaa; }
-        .low { color: #4CAF50; }
-        .medium { color: #FF9800; }
-        .high { color: #f44336; }
-        .web { color: #2196F3; }
-        .details { font-family: monospace; font-size: 0.9em; }
-        a { color: #4CAF50; text-decoration: none; }
-        a:hover { text-decoration: underline; }
+        body { font-family: Arial; margin: 40px; background: #1a1a1a; color: #fff; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; border: 1px solid #444; text-align: left; }
+        th { background: #333; }
+        tr.web { background: #0d47a1; }
+        tr.ssh { background: #388e3c; }
+        tr:hover { background: #555 !important; }
+        h1 { color: #4caf50; }
+        .status { color: #4caf50; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🛡️ Honeypot Attack Dashboard</h1>
-        <div class="stats">
-            <strong>Total Recent Events: {{ total_events }}</strong> | 
-            <a href="/login">← Login Trap</a> | 
-            <a href="/events">JSON API</a>
-        </div>
-    </div>
+    <h1>Honeypot Phase 5 LIVE ✅</h1>
+    <p>Web Attacks: {{ total_web }} | <a href="/api/ssh_attacks?limit=50" target="_blank">SSH Attacks JSON</a></p>
     
     <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>IP</th>
-                <th>Type</th>
-                <th>Time</th>
-                <th>Username/Password</th>
-                <th>Command</th>
-                <th>Severity</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for event in events %}
-            <tr>
-                <td>{{ event.id }}</td>
-                <td class="ip">{{ event.source_ip or 'N/A' }}</td>
-                <td class="web">{{ event.event_type }}</td>
-                <td class="time">{{ event.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-                <td class="details">{{ event.username or '' }} / {{ event.password or '' }}</td>
-                <td class="details">{{ event.command or '' }}</td>
-                <td class="{{ event.severity }}">{{ event.severity.upper() }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
+        <tr>
+            <th>Time</th><th>IP</th><th>Type</th><th>Event</th><th>User/Pass</th><th>Command</th><th>Session</th>
+        </tr>
+        {% for event in web_events %}
+        <tr class="web">
+            <td>{{ event.timestamp }}</td>
+            <td>{{ event.source_ip }}</td>
+            <td>Web</td>
+            <td>{{ event.command }}</td>
+            <td>{{ event.username }}/{{ event.password[:3] }}***</td>
+            <td>-</td>
+            <td>{{ event.session_id }}</td>
+        </tr>
+        {% endfor %}
     </table>
+    
+    <h3>SSH Attacks (Live API)</h3>
+    <table id="ssh-table">
+        <tr><th>Time</th><th>IP</th><th>Event</th><th>User/Pass</th><th>Command</th><th>Session</th></tr>
+    </table>
+    
+    <script>
+        async function loadSSH() {
+            try {
+                const res = await fetch('/api/ssh_attacks?limit=20');
+                const data = await res.json();
+                const table = document.getElementById('ssh-table');
+                table.innerHTML = '<tr><th>Time</th><th>IP</th><th>Event</th><th>User/Pass</th><th>Command</th><th>Session</th></tr>';
+                data.ssh_attacks.forEach(e => {
+                    const row = table.insertRow();
+                    row.className = 'ssh';
+                    row.innerHTML = `<td>${e.timestamp}</td><td>${e.src_ip}</td><td>${e.eventid}</td><td>${e.username}/${e.password}</td><td>${e.input_cmd}</td><td>${e.session}</td>`;
+                });
+            } catch(e) { console.error(e); }
+        }
+        loadSSH(); setInterval(loadSSH, 10000);  // refresh 10s
+    </script>
 </body>
 </html>
