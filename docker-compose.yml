@@ -1,0 +1,9 @@
+version: '3.8'
+services:
+  cowrie:
+    image: cowrie/cowrie:latest
+    ports:
+      - "2222:2222"
+    volumes:
+      - ./cowrie-logs:/cowrie/var/log/cowrie
+    restart: unless-stopped

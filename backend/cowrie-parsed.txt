@@ -1,0 +1,7 @@
+[36mcowrie_1  |[0m 2026-03-09T09:44:12+0000 [HoneyPotSSHTransport,1,172.18.0.1] login attempt [b'root'/b'honey'] succeeded
+[36mcowrie_1  |[0m 2026-03-09T09:44:18+0000 [HoneyPotSSHTransport,1,172.18.0.1] CMD: whoami
+[36mcowrie_1  |[0m 2026-03-09T09:44:18+0000 [HoneyPotSSHTransport,1,172.18.0.1] Command found: whoami 
+[36mcowrie_1  |[0m 2026-03-09T09:44:20+0000 [HoneyPotSSHTransport,1,172.18.0.1] CMD: id
+[36mcowrie_1  |[0m 2026-03-09T09:44:20+0000 [HoneyPotSSHTransport,1,172.18.0.1] Command found: id 
+[36mcowrie_1  |[0m 2026-03-09T09:44:22+0000 [HoneyPotSSHTransport,1,172.18.0.1] CMD: exit
+[36mcowrie_1  |[0m 2026-03-09T09:44:22+0000 [HoneyPotSSHTransport,1,172.18.0.1] Command found: exit 

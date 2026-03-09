@@ -1,0 +1,65 @@
+Attaching to honeypot-project_cowrie_1
+[36mcowrie_1  |[0m /cowrie/cowrie-env/lib/python3.13/site-packages/twisted/conch/ssh/transport.py:110: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+[36mcowrie_1  |[0m   b"3des-cbc": (algorithms.TripleDES, 24, modes.CBC),
+[36mcowrie_1  |[0m /cowrie/cowrie-env/lib/python3.13/site-packages/twisted/conch/ssh/transport.py:117: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+[36mcowrie_1  |[0m   b"3des-ctr": (algorithms.TripleDES, 24, modes.CTR),
+[36mcowrie_1  |[0m 2026-03-09T09:40:39+0000 [-] Reading configuration from ['/cowrie/cowrie-git/etc/cowrie.cfg.dist']
+[36mcowrie_1  |[0m 2026-03-09T09:40:39+0000 [-] Python Version 3.13.5 (main, Jun 25 2025, 18:55:22) [GCC 14.2.0]
+[36mcowrie_1  |[0m 2026-03-09T09:40:39+0000 [-] Twisted Version 25.5.0
+[36mcowrie_1  |[0m 2026-03-09T09:40:39+0000 [-] Cowrie Version 2.9.13.dev8+gb5e6ce052
+[36mcowrie_1  |[0m 2026-03-09T09:40:39+0000 [-] Sensor UUID: b0d385ac-1b90-11f1-b2ef-e275915fb58d
+[36mcowrie_1  |[0m 2026-03-09T09:40:39+0000 [-] Loaded output engine: jsonlog
+[36mcowrie_1  |[0m 2026-03-09T09:40:39+0000 [twisted.scripts._twistd_unix.UnixAppLogger#info] twistd 25.5.0 (/cowrie/cowrie-env/bin/python3 3.13.5) starting up.
+[36mcowrie_1  |[0m 2026-03-09T09:40:39+0000 [twisted.scripts._twistd_unix.UnixAppLogger#info] reactor class: twisted.internet.epollreactor.EPollReactor.
+[36mcowrie_1  |[0m 2026-03-09T09:40:39+0000 [-] CowrieSSHFactory starting on 2222
+[36mcowrie_1  |[0m 2026-03-09T09:40:39+0000 [cowrie.ssh.factory.CowrieSSHFactory#info] Starting factory <cowrie.ssh.factory.CowrieSSHFactory object at 0x7e31c9e901a0>
+[36mcowrie_1  |[0m 2026-03-09T09:40:39+0000 [-] Ready to accept SSH connections
+[36mcowrie_1  |[0m 2026-03-09T09:40:50+0000 [cowrie.ssh.factory.CowrieSSHFactory] No moduli, no diffie-hellman-group-exchange-sha1
+[36mcowrie_1  |[0m 2026-03-09T09:40:50+0000 [cowrie.ssh.factory.CowrieSSHFactory] No moduli, no diffie-hellman-group-exchange-sha256
+[36mcowrie_1  |[0m 2026-03-09T09:40:50+0000 [cowrie.ssh.factory.CowrieSSHFactory] New connection: 172.18.0.1:47314 (172.18.0.2:2222) [session: 4e150f5b206d]
+[36mcowrie_1  |[0m 2026-03-09T09:40:50+0000 [HoneyPotSSHTransport,0,172.18.0.1] Remote SSH version: SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.13
+[36mcowrie_1  |[0m 2026-03-09T09:40:50+0000 [HoneyPotSSHTransport,0,172.18.0.1] SSH client hassh fingerprint: e1d88fdd485f9c710074daa1fcce80a6
+[36mcowrie_1  |[0m 2026-03-09T09:40:50+0000 [cowrie.ssh.transport.HoneyPotSSHTransport#debug] kex alg=b'curve25519-sha256' key alg=b'ssh-ed25519'
+[36mcowrie_1  |[0m 2026-03-09T09:40:50+0000 [cowrie.ssh.transport.HoneyPotSSHTransport#debug] outgoing: b'aes128-ctr' b'hmac-sha2-256' b'none'
+[36mcowrie_1  |[0m 2026-03-09T09:40:50+0000 [cowrie.ssh.transport.HoneyPotSSHTransport#debug] incoming: b'aes128-ctr' b'hmac-sha2-256' b'none'
+[36mcowrie_1  |[0m 2026-03-09T09:40:50+0000 [cowrie.ssh.transport.HoneyPotSSHTransport#info] connection lost
+[36mcowrie_1  |[0m 2026-03-09T09:40:50+0000 [HoneyPotSSHTransport,0,172.18.0.1] Connection lost after 0.0 seconds
+[36mcowrie_1  |[0m 2026-03-09T09:44:06+0000 [cowrie.ssh.factory.CowrieSSHFactory] No moduli, no diffie-hellman-group-exchange-sha1
+[36mcowrie_1  |[0m 2026-03-09T09:44:06+0000 [cowrie.ssh.factory.CowrieSSHFactory] No moduli, no diffie-hellman-group-exchange-sha256
+[36mcowrie_1  |[0m 2026-03-09T09:44:06+0000 [cowrie.ssh.factory.CowrieSSHFactory] New connection: 172.18.0.1:46874 (172.18.0.2:2222) [session: f65ffde86a3d]
+[36mcowrie_1  |[0m 2026-03-09T09:44:06+0000 [HoneyPotSSHTransport,1,172.18.0.1] Remote SSH version: SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.13
+[36mcowrie_1  |[0m 2026-03-09T09:44:06+0000 [HoneyPotSSHTransport,1,172.18.0.1] SSH client hassh fingerprint: e1d88fdd485f9c710074daa1fcce80a6
+[36mcowrie_1  |[0m 2026-03-09T09:44:06+0000 [cowrie.ssh.transport.HoneyPotSSHTransport#debug] kex alg=b'curve25519-sha256' key alg=b'ssh-ed25519'
+[36mcowrie_1  |[0m 2026-03-09T09:44:06+0000 [cowrie.ssh.transport.HoneyPotSSHTransport#debug] outgoing: b'aes128-ctr' b'hmac-sha2-256' b'none'
+[36mcowrie_1  |[0m 2026-03-09T09:44:06+0000 [cowrie.ssh.transport.HoneyPotSSHTransport#debug] incoming: b'aes128-ctr' b'hmac-sha2-256' b'none'
+[36mcowrie_1  |[0m 2026-03-09T09:44:09+0000 [cowrie.ssh.transport.HoneyPotSSHTransport#debug] NEW KEYS
+[36mcowrie_1  |[0m 2026-03-09T09:44:09+0000 [cowrie.ssh.transport.HoneyPotSSHTransport#debug] starting service b'ssh-userauth'
+[36mcowrie_1  |[0m 2026-03-09T09:44:09+0000 [cowrie.ssh.userauth.HoneyPotSSHUserAuthServer#debug] b'root' trying auth b'none'
+[36mcowrie_1  |[0m 2026-03-09T09:44:12+0000 [cowrie.ssh.userauth.HoneyPotSSHUserAuthServer#debug] b'root' trying auth b'password'
+[36mcowrie_1  |[0m 2026-03-09T09:44:12+0000 [HoneyPotSSHTransport,1,172.18.0.1] Could not read etc/userdb.txt, default database activated
+[36mcowrie_1  |[0m 2026-03-09T09:44:12+0000 [HoneyPotSSHTransport,1,172.18.0.1] login attempt [b'root'/b'honey'] succeeded
+[36mcowrie_1  |[0m 2026-03-09T09:44:12+0000 [HoneyPotSSHTransport,1,172.18.0.1] Initialized emulated server as architecture: linux-x64-lsb
+[36mcowrie_1  |[0m 2026-03-09T09:44:12+0000 [cowrie.ssh.userauth.HoneyPotSSHUserAuthServer#debug] b'root' authenticated with b'password'
+[36mcowrie_1  |[0m 2026-03-09T09:44:12+0000 [cowrie.ssh.transport.HoneyPotSSHTransport#debug] starting service b'ssh-connection'
+[36mcowrie_1  |[0m 2026-03-09T09:44:12+0000 [cowrie.ssh.connection.CowrieSSHConnection#debug] got channel b'session' request
+[36mcowrie_1  |[0m 2026-03-09T09:44:12+0000 [cowrie.ssh.session.HoneyPotSSHSession#info] channel open
+[36mcowrie_1  |[0m 2026-03-09T09:44:12+0000 [cowrie.ssh.connection.CowrieSSHConnection#debug] got global b'no-more-sessions@openssh.com' request
+[36mcowrie_1  |[0m 2026-03-09T09:44:12+0000 [twisted.conch.ssh.session#info] Handling pty request: b'xterm-256color' (41, 74, 0, 0)
+[36mcowrie_1  |[0m 2026-03-09T09:44:12+0000 [SSHChannel session (0) on SSHService b'ssh-connection' on HoneyPotSSHTransport,1,172.18.0.1] Terminal Size: 74 41
+[36mcowrie_1  |[0m 2026-03-09T09:44:12+0000 [SSHChannel session (0) on SSHService b'ssh-connection' on HoneyPotSSHTransport,1,172.18.0.1] request_env: LANG=en_US.UTF-8
+[36mcowrie_1  |[0m 2026-03-09T09:44:12+0000 [twisted.conch.ssh.session#info] Getting shell
+[36mcowrie_1  |[0m 2026-03-09T09:44:18+0000 [HoneyPotSSHTransport,1,172.18.0.1] CMD: whoami
+[36mcowrie_1  |[0m 2026-03-09T09:44:18+0000 [HoneyPotSSHTransport,1,172.18.0.1] Command found: whoami 
+[36mcowrie_1  |[0m 2026-03-09T09:44:20+0000 [HoneyPotSSHTransport,1,172.18.0.1] CMD: id
+[36mcowrie_1  |[0m 2026-03-09T09:44:20+0000 [HoneyPotSSHTransport,1,172.18.0.1] Command found: id 
+[36mcowrie_1  |[0m 2026-03-09T09:44:22+0000 [HoneyPotSSHTransport,1,172.18.0.1] CMD: exit
+[36mcowrie_1  |[0m 2026-03-09T09:44:22+0000 [HoneyPotSSHTransport,1,172.18.0.1] Command found: exit 
+[36mcowrie_1  |[0m 2026-03-09T09:44:22+0000 [twisted.conch.ssh.session#info] exitCode: 0
+[36mcowrie_1  |[0m 2026-03-09T09:44:22+0000 [cowrie.ssh.connection.CowrieSSHConnection#debug] sending request b'exit-status'
+[36mcowrie_1  |[0m 2026-03-09T09:44:22+0000 [HoneyPotSSHTransport,1,172.18.0.1] Closing TTY Log: var/lib/cowrie/tty/e125fd47a1f55d12a8ed15b8e00cf05de3429adb85acc1934ec12b4d75aade68 after 9.9 seconds
+[36mcowrie_1  |[0m 2026-03-09T09:44:22+0000 [cowrie.ssh.connection.CowrieSSHConnection#info] sending close 0
+[36mcowrie_1  |[0m 2026-03-09T09:44:22+0000 [cowrie.ssh.session.HoneyPotSSHSession#info] remote close
+[36mcowrie_1  |[0m 2026-03-09T09:44:22+0000 [HoneyPotSSHTransport,1,172.18.0.1] Got remote error, code 11 reason: b'disconnected by user'
+[36mcowrie_1  |[0m 2026-03-09T09:44:22+0000 [HoneyPotSSHTransport,1,172.18.0.1] avatar root logging out
+[36mcowrie_1  |[0m 2026-03-09T09:44:22+0000 [cowrie.ssh.transport.HoneyPotSSHTransport#info] connection lost
+[36mcowrie_1  |[0m 2026-03-09T09:44:22+0000 [HoneyPotSSHTransport,1,172.18.0.1] Connection lost after 15.8 seconds
