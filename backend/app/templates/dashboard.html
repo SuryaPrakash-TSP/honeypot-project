@@ -1,61 +1,124 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Honeypot Dashboard - Recent Attacks</title>
+    <title>🛡️  Honeypot Deception</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background: #1a1a1a; color: #fff; }
-        .header { text-align: center; margin-bottom: 30px; }
-        .stats { background: #2d2d2d; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-        table { border-collapse: collapse; width: 100%; background: #2d2d2d; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        th { background: #333; padding: 12px; text-align: left; font-weight: 600; }
-        td { padding: 12px; border-bottom: 1px solid #444; }
-        tr:hover { background: #363636; }
-        .ip { font-family: monospace; }
-        .time { font-size: 0.9em; color: #aaa; }
-        .low { color: #4CAF50; }
-        .medium { color: #FF9800; }
-        .high { color: #f44336; }
-        .web { color: #2196F3; }
-        .details { font-family: monospace; font-size: 0.9em; }
-        a { color: #4CAF50; text-decoration: none; }
-        a:hover { text-decoration: underline; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Inter', -apple-system, sans-serif; 
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 100%);
+            color: #e2e8f0; min-height: 100vh; 
+        }
+        .header { 
+            background: rgba(15,15,35,0.95); backdrop-filter: blur(20px); 
+            padding: 2rem; text-align: center; border-bottom: 1px solid #2d3748;
+        }
+        .header h1 { 
+            font-size: 2.5rem; font-weight: 700; 
+            background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%); 
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+        .stats { 
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 1.5rem; margin-top: 1rem; max-width: 1200px; margin-inline: auto;
+        }
+        .stat-card { 
+            background: rgba(45,55,72,0.8); border: 1px solid #4a5568; 
+            padding: 1.5rem; border-radius: 12px; text-align: center; 
+            transition: all 0.3s ease; backdrop-filter: blur(10px);
+        }
+        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+        .stat-number { font-size: 2.5rem; font-weight: 700; color: #60a5fa; }
+        .stat-label { color: #a0aec0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .table-container { max-width: 1400px; margin: 2rem auto; padding: 0 2rem; }
+        table { width: 100%; border-collapse: collapse; background: rgba(45,55,72,0.6); 
+                border-radius: 16px; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+                backdrop-filter: blur(20px); border: 1px solid #4a5568; }
+        th { 
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%); 
+            padding: 1.25rem 1.5rem; text-align: left; font-weight: 600; 
+            font-size: 0.85rem; color: #e2e8f0; text-transform: uppercase; 
+            letter-spacing: 0.5px; border-bottom: 1px solid #4a5568;
+        }
+        td { padding: 1.25rem 1.5rem; border-bottom: 1px solid rgba(74,85,104,0.5); 
+             font-size: 0.95rem; transition: all 0.2s ease; }
+        tr:hover { background: rgba(90,165,250,0.1) !important; transform: scale(1.01); }
+        .ip { font-family: 'SF Mono', monospace; color: #60a5fa; font-weight: 500; }
+        .time { color: #a0aec0; font-size: 0.9rem; }
+        .low { color: #48bb78; font-weight: 600; }
+        .medium { color: #ed8936; font-weight: 600; }
+        .high { color: #f56565; font-weight: 700; animation: pulse 2s infinite; }
+        .details { font-family: 'SF Mono', monospace; font-size: 0.85rem; color: #cbd5e0; }
+        .web { color: #60a5fa; font-weight: 500; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .nav-links { display: flex; gap: 1rem; justify-content: center; margin-top: 1rem; flex-wrap: wrap; }
+        .nav-links a { 
+            padding: 0.75rem 1.5rem; background: rgba(90,165,250,0.2); 
+            color: #60a5fa; text-decoration: none; border-radius: 8px; 
+            font-weight: 500; border: 1px solid rgba(90,165,250,0.3);
+            transition: all 0.3s ease;
+        }
+        .nav-links a:hover { background: #60a5fa; color: #0f0f23; transform: translateY(-2px); }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>🛡️ Honeypot Attack Dashboard</h1>
+        <h1>🛡️  Honeypot Deception Dashboard</h1>
         <div class="stats">
-            <strong>Total Recent Events: {{ total_events }}</strong> | 
-            <a href="/login">← Login Trap</a> | 
-            <a href="/events">JSON API</a>
+            <div class="stat-card">
+                <div class="stat-number">{{ events|length }}</div>
+                <div class="stat-label">Total Events</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ web_count }}</div>
+                <div class="stat-label">Web Attacks</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ ssh_count }}</div>
+                <div class="stat-label">SSH Sessions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">LOW</div>
+                <div class="stat-label">Threat Level</div>
+            </div>
+        </div>
+        <div class="nav-links">
+            <a href="/login">← Login Trap</a>
+            <a href="/events">JSON Export</a>
+            <a href="/ssh">SSH Logs</a>
         </div>
     </div>
     
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>IP</th>
-                <th>Type</th>
-                <th>Time</th>
-                <th>Username/Password</th>
-                <th>Command</th>
-                <th>Severity</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for event in events %}
-            <tr>
-                <td>{{ event.id }}</td>
-                <td class="ip">{{ event.source_ip or 'N/A' }}</td>
-                <td class="web">{{ event.event_type }}</td>
-                <td class="time">{{ event.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-                <td class="details">{{ event.username or '' }} / {{ event.password or '' }}</td>
-                <td class="details">{{ event.command or '' }}</td>
-                <td class="{{ event.severity }}">{{ event.severity.upper() }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>IP</th>
+                    <th>Type</th>
+                    <th>Time</th>
+                    <th>Username/Password</th>
+                    <th>Command</th>
+                    <th>Severity</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for event in events %}
+                <tr>
+                    <td>{{ event.id }}</td>
+                    <td class="ip">{{ event.source_ip or '127.0.0.1' }}</td>
+                    <td class="web">{{ event.event_type }}</td>
+                    <td class="time">{{ event.timestamp }}</td>
+                    <td class="details">{{ event.username or 'N/A' }} / {{ event.password or 'N/A' }}</td>
+                    <td class="details">{{ event.command or 'N/A' }}</td>
+                    <td class="{% if event.severity == 'low' %}low{% elif event.severity == 'medium' %}medium{% else %}high{% endif %}">{{ event.severity.upper() }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </body>
 </html>
