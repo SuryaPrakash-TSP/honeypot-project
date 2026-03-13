@@ -1,2 +1,6 @@
 *.pyc
 data/events.db
+backend/data/
+*.ipynb_checkpoints/
+*.db
+cowrie-parsed.txt

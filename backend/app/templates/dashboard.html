@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>🛡️  Honeypot Deception</title>
+    <title>🛡️ Honeypot Deception Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -32,6 +32,9 @@
         .stat-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
         .stat-number { font-size: 2.5rem; font-weight: 700; color: #60a5fa; }
         .stat-label { color: #a0aec0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
+        .threat-low { color: #48bb78; }
+        .threat-medium { color: #ed8936; }
+        .threat-high { color: #f56565; animation: pulse 2s infinite; }
         
         .table-container { max-width: 1400px; margin: 2rem auto; padding: 0 2rem; }
         table { width: 100%; border-collapse: collapse; background: rgba(45,55,72,0.6); 
@@ -66,10 +69,10 @@
 </head>
 <body>
     <div class="header">
-        <h1>🛡️  Honeypot Deception Dashboard</h1>
+        <h1>🛡️ Honeypot Deception Dashboard</h1>
         <div class="stats">
             <div class="stat-card">
-                <div class="stat-number">{{ events|length }}</div>
+                <div class="stat-number">{{ total_events }}</div>  <!-- FIXED: Real DB total! -->
                 <div class="stat-label">Total Events</div>
             </div>
             <div class="stat-card">
@@ -77,11 +80,11 @@
                 <div class="stat-label">Web Attacks</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number">{{ ssh_count }}</div>
+                <div class="stat-number">{{ ssh_count }}</div>  <!-- FIXED: Dynamic SSH -->
                 <div class="stat-label">SSH Sessions</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number">LOW</div>
+                <div class="stat-number threat-{{ threat_level.lower() }}">{{ threat_level }}</div>  <!-- FIXED: Dynamic! -->
                 <div class="stat-label">Threat Level</div>
             </div>
         </div>
@@ -111,7 +114,7 @@
                     <td>{{ event.id }}</td>
                     <td class="ip">{{ event.source_ip or '127.0.0.1' }}</td>
                     <td class="web">{{ event.event_type }}</td>
-                    <td class="time">{{ event.timestamp }}</td>
+                    <td class="time">{{ event.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
                     <td class="details">{{ event.username or 'N/A' }} / {{ event.password or 'N/A' }}</td>
                     <td class="details">{{ event.command or 'N/A' }}</td>
                     <td class="{% if event.severity == 'low' %}low{% elif event.severity == 'medium' %}medium{% else %}high{% endif %}">{{ event.severity.upper() }}</td>
