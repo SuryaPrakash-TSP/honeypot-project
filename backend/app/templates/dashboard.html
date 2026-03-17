@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>🛡️ Honeypot Deception Dashboard</title>
+    <title>🛡️ Honeypot Deception Dashboard v0.8</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
@@ -35,6 +36,11 @@
         .threat-low { color: #48bb78; }
         .threat-medium { color: #ed8936; }
         .threat-high { color: #f56565; animation: pulse 2s infinite; }
+        
+        .charts-section { max-width: 1200px; margin: 2rem auto; padding: 0 2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+        .chart-container { background: rgba(45,55,72,0.6); border-radius: 16px; padding: 1.5rem; backdrop-filter: blur(10px); }
+        .export-btn { background: #60a5fa; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; margin: 1rem; }
+        .export-btn:hover { background: #3b82f6; }
         
         .table-container { max-width: 1400px; margin: 2rem auto; padding: 0 2rem; }
         table { width: 100%; border-collapse: collapse; background: rgba(45,55,72,0.6); 
@@ -72,7 +78,7 @@
         <h1>🛡️ Honeypot Deception Dashboard</h1>
         <div class="stats">
             <div class="stat-card">
-                <div class="stat-number">{{ total_events }}</div>  <!-- FIXED: Real DB total! -->
+                <div class="stat-number">{{ total_events }}</div>
                 <div class="stat-label">Total Events</div>
             </div>
             <div class="stat-card">
@@ -80,18 +86,32 @@
                 <div class="stat-label">Web Attacks</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number">{{ ssh_count }}</div>  <!-- FIXED: Dynamic SSH -->
+                <div class="stat-number">{{ ssh_count }}</div>
                 <div class="stat-label">SSH Sessions</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number threat-{{ threat_level.lower() }}">{{ threat_level }}</div>  <!-- FIXED: Dynamic! -->
+                <div class="stat-number threat-{{ threat_level.lower() }}">{{ threat_level }}</div>
                 <div class="stat-label">Threat Level</div>
             </div>
         </div>
         <div class="nav-links">
             <a href="/login">← Login Trap</a>
-            <a href="/events">JSON Export</a>
+            <a href="/events.csv">📥 CSV Export</a>  <!-- New! -->
             <a href="/ssh">SSH Logs</a>
+            <a href="/">API Status</a>
+        </div>
+    </div>
+    
+    <!-- NEW: Charts Section -->
+    <div class="charts-section">
+        <div class="chart-container">
+            <h3 style="margin-bottom: 1rem; color: #60a5fa;">Top IPs (Pie)</h3>
+            <canvas id="ipChart" height="200"></canvas>
+        </div>
+        <div class="chart-container">
+            <h3 style="margin-bottom: 1rem; color: #ed8936;">Severity Breakdown</h3>
+            <canvas id="severityChart" height="200"></canvas>
+            <button class="export-btn" onclick="window.location.href='/events.csv'">Export All Events CSV</button>
         </div>
     </div>
     
@@ -123,5 +143,46 @@
             </tbody>
         </table>
     </div>
+
+    <!-- CRITICAL: WebSocket + Charts JS -->
+    <script>
+        // 1. WebSocket Alerts 🚨
+        const ws = new WebSocket("ws://localhost:8000/ws");
+        ws.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            if (data.alert) {
+                const alertDiv = document.createElement('div');
+                alertDiv.style.cssText = `
+                    position: fixed; top: 20px; right: 20px; background: #dc3545; color: white; 
+                    padding: 15px 20px; border-radius: 8px; z-index: 9999; font-weight: bold; 
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3); max-width: 350px; font-family: Inter;
+                `;
+                alertDiv.innerHTML = `🚨 ${data.alert}`;
+                document.body.appendChild(alertDiv);
+                setTimeout(() => { if (alertDiv.parentNode) alertDiv.remove(); }, 6000);
+            }
+        };
+
+        // 2. Charts (hardcoded from your data: 127=30, evil=2, severity LOW=30 MED=3)
+        new Chart(document.getElementById('ipChart'), {
+            type: 'pie',
+            data: {
+                labels: ['127.0.0.1 (30)', 'evil.com (2)', '1.2.3.4 (1)'],
+                datasets: [{ data: [30, 2, 1], backgroundColor: ['#60a5fa', '#f56565', '#ed8936'] }]
+            },
+            options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: '#e2e8f0' } } } }
+        });
+        new Chart(document.getElementById('severityChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['LOW (30)', 'MEDIUM (3)'],
+                datasets: [{ data: [30, 3], backgroundColor: ['#48bb78', '#ed8936'] }]
+            },
+            options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: '#e2e8f0' } } } }
+        });
+
+        // 3. Auto-refresh table every 10s
+        setTimeout(() => location.reload(), 10000);
+    </script>
 </body>
 </html>
