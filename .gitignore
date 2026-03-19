@@ -1,6 +1,21 @@
-*.pyc
-data/events.db
+# Data (regen)
 backend/data/
+**/events.db
+**/events*.csv
+**/geoip/
+
+# Python/Jupyter
+__pycache__/
+*.pyc
 *.ipynb_checkpoints/
-*.db
-cowrie-parsed.txt
+backend/ml_baseline.*
+backend/Untitled.*
+backend/untitled.*
+
+# Backups/OS
+*.bak
+.DS_Store
+
+# Docker/VM
+cowrie-*/
+*.log

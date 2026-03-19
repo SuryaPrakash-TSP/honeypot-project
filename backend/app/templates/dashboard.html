@@ -1,188 +1,166 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>🛡️ Honeypot Deception Dashboard v0.8</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>🛡️ Honeypot Deception Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-primary: #0a0a0f;
+            --accent-primary: #00f5ff;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border: rgba(75,85,99,0.3);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
         body { 
-            font-family: 'Inter', -apple-system, sans-serif; 
-            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 100%);
-            color: #e2e8f0; min-height: 100vh; 
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg-primary); color: var(--text-primary); 
+            min-height:100vh; line-height:1.5;
         }
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+        
         .header { 
-            background: rgba(15,15,35,0.95); backdrop-filter: blur(20px); 
-            padding: 2rem; text-align: center; border-bottom: 1px solid #2d3748;
+            display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border);
         }
-        .header h1 { 
-            font-size: 2.5rem; font-weight: 700; 
-            background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%); 
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            margin-bottom: 0.5rem;
+        .logo { font-size: 1.5rem; font-weight: 600; color: var(--accent-primary); }
+        .status { font-size: 0.9rem; color: var(--text-secondary); }
+
+        .metrics { 
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
+            gap: 1rem; margin-bottom: 2rem; 
         }
-        .stats { 
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
-            gap: 1.5rem; margin-top: 1rem; max-width: 1200px; margin-inline: auto;
+        .metric { 
+            text-align: center; padding: 1.5rem; 
+            background: rgba(20,20,35,0.8); border-radius: 12px; border: 1px solid var(--border);
         }
-        .stat-card { 
-            background: rgba(45,55,72,0.8); border: 1px solid #4a5568; 
-            padding: 1.5rem; border-radius: 12px; text-align: center; 
-            transition: all 0.3s ease; backdrop-filter: blur(10px);
+        .metric-value { font-size: 2.5rem; font-weight: 600; margin-bottom: 0.25rem; }
+        .metric-label { font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; }
+
+        .actions { display: flex; gap: 1rem; margin-bottom: 2rem; }
+        .btn { 
+            padding: 0.75rem 1.5rem; background: linear-gradient(135deg, var(--accent-primary), #7c3aed); 
+            color: #0a0a0f; border: none; border-radius: 8px; cursor: pointer; 
+            font-weight: 500; text-decoration: none; display: inline-block;
+            transition: transform 0.2s;
         }
-        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
-        .stat-number { font-size: 2.5rem; font-weight: 700; color: #60a5fa; }
-        .stat-label { color: #a0aec0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
-        .threat-low { color: #48bb78; }
-        .threat-medium { color: #ed8936; }
-        .threat-high { color: #f56565; animation: pulse 2s infinite; }
-        
-        .charts-section { max-width: 1200px; margin: 2rem auto; padding: 0 2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
-        .chart-container { background: rgba(45,55,72,0.6); border-radius: 16px; padding: 1.5rem; backdrop-filter: blur(10px); }
-        .export-btn { background: #60a5fa; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; margin: 1rem; }
-        .export-btn:hover { background: #3b82f6; }
-        
-        .table-container { max-width: 1400px; margin: 2rem auto; padding: 0 2rem; }
-        table { width: 100%; border-collapse: collapse; background: rgba(45,55,72,0.6); 
-                border-radius: 16px; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.5);
-                backdrop-filter: blur(20px); border: 1px solid #4a5568; }
+        .btn:hover { transform: scale(1.05); }
+
+        .table-container { 
+            background: rgba(20,20,35,0.8); border-radius: 12px; overflow: hidden; 
+            border: 1px solid var(--border);
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 1rem 1.5rem; text-align: left; border-bottom: 1px solid var(--border); }
         th { 
-            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%); 
-            padding: 1.25rem 1.5rem; text-align: left; font-weight: 600; 
-            font-size: 0.85rem; color: #e2e8f0; text-transform: uppercase; 
-            letter-spacing: 0.5px; border-bottom: 1px solid #4a5568;
+            background: rgba(26,26,46,0.9); font-weight: 500; font-size: 0.85rem; 
+            color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;
         }
-        td { padding: 1.25rem 1.5rem; border-bottom: 1px solid rgba(74,85,104,0.5); 
-             font-size: 0.95rem; transition: all 0.2s ease; }
-        tr:hover { background: rgba(90,165,250,0.1) !important; transform: scale(1.01); }
-        .ip { font-family: 'SF Mono', monospace; color: #60a5fa; font-weight: 500; }
-        .time { color: #a0aec0; font-size: 0.9rem; }
-        .low { color: #48bb78; font-weight: 600; }
-        .medium { color: #ed8936; font-weight: 600; }
-        .high { color: #f56565; font-weight: 700; animation: pulse 2s infinite; }
-        .details { font-family: 'SF Mono', monospace; font-size: 0.85rem; color: #cbd5e0; }
-        .web { color: #60a5fa; font-weight: 500; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
-        .nav-links { display: flex; gap: 1rem; justify-content: center; margin-top: 1rem; flex-wrap: wrap; }
-        .nav-links a { 
-            padding: 0.75rem 1.5rem; background: rgba(90,165,250,0.2); 
-            color: #60a5fa; text-decoration: none; border-radius: 8px; 
-            font-weight: 500; border: 1px solid rgba(90,165,250,0.3);
-            transition: all 0.3s ease;
+        tr:hover { background: rgba(0,245,255,0.05); }
+        
+        .ip { color: var(--accent-primary); font-family: monospace; font-weight: 500; }
+        .severity { 
+            padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 500;
         }
-        .nav-links a:hover { background: #60a5fa; color: #0f0f23; transform: translateY(-2px); }
+        .low { background: rgba(16,185,129,0.2); color: #10b981; }
+        .medium { background: rgba(245,158,11,0.2); color: #f59e0b; }
+        .high { background: rgba(239,68,68,0.2); color: #ef4444; }
+
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+        @media (max-width: 768px) { 
+            .container { padding: 1rem; } 
+            .metrics { grid-template-columns: 1fr; }
+            .actions { flex-direction: column; }
+            table { font-size: 0.9rem; }
+            th, td { padding: 0.75rem 1rem; }
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🛡️ Honeypot Deception Dashboard</h1>
-        <div class="stats">
-            <div class="stat-card">
-                <div class="stat-number">{{ total_events }}</div>
-                <div class="stat-label">Total Events</div>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">🛡️  Honeypot Deception Dashboard</div>
+            <div class="status">{{ mode }} • {{ total_events }} attacks • Auto-refresh 15s</div>
+        </div>
+
+        <!-- Essential Metrics (KEEP) -->
+        <div class="metrics">
+            <div class="metric">
+                <div class="metric-value">{{ total_events }}</div>
+                <div class="metric-label">Total Attacks</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-number">{{ web_count }}</div>
-                <div class="stat-label">Web Attacks</div>
+            <div class="metric">
+                <div class="metric-value">{{ ssh_count }}</div>
+                <div class="metric-label">SSH Probes</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-number">{{ ssh_count }}</div>
-                <div class="stat-label">SSH Sessions</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number threat-{{ threat_level.lower() }}">{{ threat_level }}</div>
-                <div class="stat-label">Threat Level</div>
+            <div class="metric">
+                <div class="metric-value">{{ web_count }}</div>
+                <div class="metric-label">Web Traps</div>
             </div>
         </div>
-        <div class="nav-links">
-            <a href="/login">← Login Trap</a>
-            <a href="/events.csv">📥 CSV Export</a>  <!-- New! -->
-            <a href="/ssh">SSH Logs</a>
-            <a href="/">API Status</a>
+
+        <!-- Action Buttons (KEEP) -->
+        <div class="actions">
+            <a href="/login" class="btn">🐟 Login Trap</a>
+            <a href="/events.csv" class="btn">📥 Export CSV</a>
+            <a href="/events" class="btn">🔍 JSON API</a>
         </div>
-    </div>
-    
-    <!-- NEW: Charts Section -->
-    <div class="charts-section">
-        <div class="chart-container">
-            <h3 style="margin-bottom: 1rem; color: #60a5fa;">Top IPs (Pie)</h3>
-            <canvas id="ipChart" height="200"></canvas>
+
+        <!-- Live Attack Feed (CORE - KEEP) -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Time (IST)</th>
+                        <th>IP</th>
+                        <th>Type</th>
+                        <th>Command</th>
+                        <th>Severity</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for event in events %}
+                    <tr>
+                        <td>{{ event.timestamp_formatted }}</td>
+                        <td><span class="ip">{{ event.source_ip }}</span></td>
+                        <td>{{ event.event_type.upper() }}</td>
+                        <td>{{ event.command[:60] or 'N/A' }}</td>
+                        <td><span class="severity {{ event.severity }}">{{ event.severity.upper() }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-        <div class="chart-container">
-            <h3 style="margin-bottom: 1rem; color: #ed8936;">Severity Breakdown</h3>
-            <canvas id="severityChart" height="200"></canvas>
-            <button class="export-btn" onclick="window.location.href='/events.csv'">Export All Events CSV</button>
-        </div>
-    </div>
-    
-    <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>IP</th>
-                    <th>Type</th>
-                    <th>Time</th>
-                    <th>Username/Password</th>
-                    <th>Command</th>
-                    <th>Severity</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for event in events %}
-                <tr>
-                    <td>{{ event.id }}</td>
-                    <td class="ip">{{ event.source_ip or '127.0.0.1' }}</td>
-                    <td class="web">{{ event.event_type }}</td>
-                    <td class="time">{{ event.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-                    <td class="details">{{ event.username or 'N/A' }} / {{ event.password or 'N/A' }}</td>
-                    <td class="details">{{ event.command or 'N/A' }}</td>
-                    <td class="{% if event.severity == 'low' %}low{% elif event.severity == 'medium' %}medium{% else %}high{% endif %}">{{ event.severity.upper() }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
     </div>
 
-    <!-- CRITICAL: WebSocket + Charts JS -->
+    <!-- WebSocket Real-time Alerts (KEEP) -->
     <script>
-        // 1. WebSocket Alerts 🚨
-        const ws = new WebSocket("ws://localhost:8000/ws");
-        ws.onmessage = function(event) {
-            const data = JSON.parse(event.data);
-            if (data.alert) {
-                const alertDiv = document.createElement('div');
-                alertDiv.style.cssText = `
-                    position: fixed; top: 20px; right: 20px; background: #dc3545; color: white; 
-                    padding: 15px 20px; border-radius: 8px; z-index: 9999; font-weight: bold; 
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.3); max-width: 350px; font-family: Inter;
-                `;
-                alertDiv.innerHTML = `🚨 ${data.alert}`;
-                document.body.appendChild(alertDiv);
-                setTimeout(() => { if (alertDiv.parentNode) alertDiv.remove(); }, 6000);
-            }
+        const ws = new WebSocket('ws://localhost:8000/ws');
+        ws.onmessage = (e) => {
+            try {
+                const data = JSON.parse(e.data);
+                if (data.alert) {
+                    const alert = document.createElement('div');
+                    alert.style.cssText = `
+                        position: fixed; top: 20px; right: 20px; 
+                        background: linear-gradient(135deg, #ef4444, #dc2626); color: white;
+                        padding: 1rem 1.5rem; border-radius: 12px; z-index: 9999; 
+                        font-weight: 500; box-shadow: 0 10px 30px rgba(239,68,68,0.4);
+                        font-family: 'Inter', sans-serif;
+                    `;
+                    alert.textContent = `🚨 ${data.alert}`;
+                    document.body.appendChild(alert);
+                    setTimeout(() => alert.remove(), 5000);
+                }
+            } catch(e) {}
         };
 
-        // 2. Charts (hardcoded from your data: 127=30, evil=2, severity LOW=30 MED=3)
-        new Chart(document.getElementById('ipChart'), {
-            type: 'pie',
-            data: {
-                labels: ['127.0.0.1 (30)', 'evil.com (2)', '1.2.3.4 (1)'],
-                datasets: [{ data: [30, 2, 1], backgroundColor: ['#60a5fa', '#f56565', '#ed8936'] }]
-            },
-            options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: '#e2e8f0' } } } }
-        });
-        new Chart(document.getElementById('severityChart'), {
-            type: 'doughnut',
-            data: {
-                labels: ['LOW (30)', 'MEDIUM (3)'],
-                datasets: [{ data: [30, 3], backgroundColor: ['#48bb78', '#ed8936'] }]
-            },
-            options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: '#e2e8f0' } } } }
-        });
-
-        // 3. Auto-refresh table every 10s
-        setTimeout(() => location.reload(), 10000);
+        // Auto-refresh
+        setInterval(() => location.reload(), 15000);
     </script>
 </body>
 </html>
+
