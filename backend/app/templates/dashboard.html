@@ -29,7 +29,7 @@
             color: var(--text-primary); 
             min-height:100vh; 
         }
-        .container { max-width: 1600px; margin: 0 auto; padding: 2rem; }
+        .container { max-width: 1800px; margin: 0 auto; padding: 2rem; }
         
         /* Header */
         .header { 
@@ -98,7 +98,7 @@
             padding: 1.5rem 2rem; border-bottom: 1px solid var(--border);
         }
         table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 1.25rem 2rem; text-align: left; }
+        th, td { padding: 1.25rem 1.5rem; text-align: left; }
         th { 
             font-weight: 500; font-size: 0.85rem; color: var(--text-secondary); 
             text-transform: uppercase; letter-spacing: 0.5px;
@@ -113,6 +113,16 @@
         }
         .ssh { background: rgba(16,185,129,0.2); color: var(--success); }
         .web { background: rgba(124,58,237,0.2); color: var(--accent-purple); }
+        
+        /* NEW: Attack Class Badges */
+        .attack-class { 
+            padding: 0.375rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
+            text-transform: uppercase;
+        }
+        .normal { background: rgba(16,185,129,0.2); color: var(--success); }
+        .brute-force { background: rgba(245,158,11,0.2); color: var(--warning); }
+        .exploitation { background: linear-gradient(135deg, var(--danger), #dc2626); color: white; animation: pulse 2s infinite; }
+        
         .severity { 
             padding: 0.375rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
             text-transform: uppercase;
@@ -133,6 +143,10 @@
         .alert { animation: slideIn 0.3s ease; }
 
         /* Responsive */
+        @media (max-width: 1400px) { 
+            .table-container { overflow-x: auto; }
+            th, td { padding: 1rem 1rem; min-width: 120px; }
+        }
         @media (max-width: 1024px) { 
             .ml-stats { grid-template-columns: 1fr; }
             .ml-card { grid-column: span 1; }
@@ -141,9 +155,8 @@
             .container { padding: 1.5rem; } 
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
             .status-bar { flex-direction: column; gap: 1rem; text-align: center; }
-            table { font-size: 0.9rem; }
-            th, td { padding: 1rem 1rem; }
-            .actions { justify-content: center; }
+            table { font-size: 0.85rem; }
+            th, td { padding: 0.75rem 0.5rem; }
         }
     </style>
 </head>
@@ -152,16 +165,16 @@
         <!-- Header -->
         <div class="header">
             <div class="logo">
-                <i class="fas fa-shield-alt"></i> Honeypot Deception
+                <i class="fas fa-shield-alt"></i> Honeypot Deception • Phase 7.5
             </div>
             <div class="status-bar">
                 <span><i class="fas fa-brain"></i> {{ mode }}</span>
                 <span><i class="fas fa-bolt"></i> {{ total_events }} Events</span>
-                <span><i class="fas fa-clock"></i> LIVE • Auto-refresh 10s</span>
+                <span><i class="fas fa-wifi"></i> LIVE WebSocket</span>
             </div>
         </div>
 
-        <!-- ✅ ML Stats + Core Metrics -->
+        <!-- ML Stats + Core Metrics -->
         <div class="stats-grid">
             <!-- ML Intelligence Card -->
             <div class="stat-card ml-card">
@@ -211,25 +224,27 @@
         <!-- Events Feed -->
         <div class="table-container">
             <div class="table-header">
-                <i class="fas fa-list"></i> Live Attack Feed (Last 50)
+                <i class="fas fa-list"></i> Live Attack Feed (Last 50) • <span id="live-count">{{ events|length }}</span> Live
             </div>
-            <table>
+            <table id="events-table">
                 <thead>
                     <tr>
                         <th><i class="fas fa-clock"></i> Time (IST)</th>
                         <th><i class="fas fa-server"></i> Attacker IP</th>
                         <th><i class="fas fa-plug"></i> Type</th>
                         <th><i class="fas fa-terminal"></i> Command</th>
+                        <th><i class="fas fa-brain"></i> Attack Class</th>
                         <th><i class="fas fa-exclamation-triangle"></i> Severity</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="events-tbody">
                     {% for event in events %}
                     <tr>
                         <td>{{ event.timestamp_formatted }}</td>
                         <td><span class="ip">{{ event.source_ip }}</span></td>
                         <td><span class="type-badge {{ event.event_type }}">{{ event.event_type.upper() }}</span></td>
-                        <td style="max-width: 300px;">{{ event.command[:60] }}{% if event.command|length > 60 %}...{% endif %}</td>
+                        <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis;" title="{{ event.command }}">{{ event.command[:50] }}{% if event.command|length > 50 %}...{% endif %}</td>
+                        <td><span class="attack-class {{ event.attack_class }}">{{ event.attack_class.replace('-', ' ').title() }}</span></td>
                         <td><span class="severity {{ event.severity }}">{{ event.severity.upper() }}</span></td>
                     </tr>
                     {% endfor %}
@@ -238,32 +253,88 @@
         </div>
     </div>
 
-    <!-- Enhanced WebSocket Alerts -->
+    <!-- Enhanced WebSocket + Live Updates -->
     <script>
         const ws = new WebSocket('ws://localhost:8000/ws');
+        const tbody = document.getElementById('events-tbody');
+        const liveCount = document.getElementById('live-count');
+        
         ws.onmessage = (e) => {
             try {
                 const data = JSON.parse(e.data);
-                if (data.alert) {
+                if (data.type === 'new_event') {
+                    const event = data.event;
+                    const row = tbody.insertRow(0);
+                    
+                    // Time
+                    row.insertCell(0).textContent = event.time;
+                    // IP
+                    const ipCell = row.insertCell(1);
+                    ipCell.innerHTML = `<span class="ip">${event.ip}</span>`;
+                    // Type
+                    const typeCell = row.insertCell(2);
+                    const typeClass = event.type === 'ssh' ? 'ssh' : 'web';
+                    typeCell.innerHTML = `<span class="type-badge ${typeClass}">${event.type.toUpperCase()}</span>`;
+                    // Command
+                    const cmdCell = row.insertCell(3);
+                    cmdCell.style.maxWidth = '250px';
+                    cmdCell.style.overflow = 'hidden';
+                    cmdCell.style.textOverflow = 'ellipsis';
+                    cmdCell.textContent = event.cmd;
+                    cmdCell.title = event.cmd;
+                    // Attack Class
+                    const attackCell = row.insertCell(4);
+                    let attackClass = event.attack_class || 'normal';
+                    attackClass = attackClass.replace('-', ' ');
+                    const attackBadgeClass = event.attack_class === 'exploitation' ? 'exploitation' : 
+                                           event.attack_class === 'brute-force' ? 'brute-force' : 'normal';
+                    attackCell.innerHTML = `<span class="attack-class ${attackBadgeClass}">${attackClass.toUpperCase()}</span>`;
+                    // Severity
+                    const severityCell = row.insertCell(5);
+                    const severityClass = event.severity.toLowerCase();
+                    severityCell.innerHTML = `<span class="severity ${severityClass}">${event.severity.toUpperCase()}</span>`;
+                    
+                    // Limit to 50 rows
+                    if (tbody.rows.length > 50) {
+                        tbody.deleteRow(50);
+                    }
+                    
+                    // Update counter
+                    liveCount.textContent = tbody.rows.length;
+                    
+                    // Flash new row
+                    row.style.background = 'rgba(0, 245, 255, 0.2)';
+                    setTimeout(() => {
+                        row.style.background = '';
+                    }, 3000);
+                } else if (data.alert) {
                     const alert = document.createElement('div');
                     alert.className = 'alert';
                     alert.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${data.alert}`;
                     document.body.appendChild(alert);
                     setTimeout(() => alert.remove(), 6000);
                 }
-            } catch(e) {}
+            } catch(e) {
+                console.error('WebSocket error:', e);
+            }
         };
 
-        // Auto-refresh + smooth reload indicator
-        let refreshCount = 0;
+        // Graceful WebSocket handling
+        ws.onclose = () => {
+            console.log('WebSocket disconnected - reconnecting...');
+            setTimeout(() => {
+                location.reload();
+            }, 5000);
+        };
+
+        // Update stats every 30s (gentle refresh, preserves WebSocket)
         setInterval(() => {
-            refreshCount++;
-            document.querySelector('.status-bar').innerHTML = 
-                `<span><i class="fas fa-brain"></i> ${document.querySelector('.status-bar span').textContent.split(' ')[0]}</span>
-                 <span><i class="fas fa-bolt"></i> ${document.querySelector('.stat-value').textContent} Events</span>
-                 <span><i class="fas fa-sync-alt fa-spin"></i> Refreshing... (${refreshCount})</span>`;
-            location.reload();
-        }, 10000);
+            // Only refresh stats, not full page
+            fetch('/').then(r => r.json()).then(data => {
+                document.querySelector('.stat-value').textContent = data.events;
+                liveCount.textContent = tbody.rows.length;
+            });
+        }, 30000);
     </script>
 </body>
 </html>
