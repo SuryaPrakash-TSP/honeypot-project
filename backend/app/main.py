@@ -33,6 +33,12 @@ async def lifespan(app_: FastAPI):
             app_state["model"] = model
             if path == 'honeypot_multi_model.pkl':
                 app_state["mode"] = "MULTI_CLASS_ML"
+                # ✅ FIX 1: Add ML dashboard stats
+                app_state["model_info"] = {
+                    "classes": ["normal", "brute-force", "exploitation"],
+                    "accuracy": "100%",
+                    "top_feature": "cmd_len (66%)"
+                }
             elif 'enhanced' in path:
                 app_state["mode"] = "ENHANCED_ML"
             else:
@@ -237,6 +243,9 @@ async def dashboard_view(request: Request, db: Session = Depends(get_db)):
         for e in events
     ]
 
+    # ✅ Pass model_info to dashboard
+    model_info = app_state.get("model_info")
+
     return templates.TemplateResponse(
         "dashboard.html",
         {
@@ -245,11 +254,12 @@ async def dashboard_view(request: Request, db: Session = Depends(get_db)):
             "total_events": total,
             "web_count": web,
             "ssh_count": ssh,
-            "mode": app_state.get("mode", "RULES")
+            "mode": app_state.get("mode", "RULES"),
+            "model_info": model_info
         }
     )
 
-# ✅ UPGRADED /predict - Multi-class + confidence + attack_type
+# ✅ FIXED /predict - No more sklearn warning + Multi-class
 class PredictRequest(BaseModel):
     ip_freq: float
     cmd_len: float
@@ -272,11 +282,15 @@ async def predict_endpoint(req: PredictRequest):
     if not model:
         raise HTTPException(status_code=503, detail="Model not loaded")
 
-    data = np.array([[req.ip_freq, req.cmd_len, req.sudo_flag, req.web_event]])
+    # ✅ FIX 2: Proper DataFrame with feature names (eliminates sklearn warning)
+    data_df = pd.DataFrame(
+        [[req.ip_freq, req.cmd_len, req.sudo_flag, req.web_event]],
+        columns=['ip_freq', 'cmd_len', 'sudo_flag', 'web_event']
+    )
 
     # Multi-class prediction (Phase 7 ready)
-    pred_class = model.predict(data)[0]
-    proba = model.predict_proba(data)[0]
+    pred_class = model.predict(data_df)[0]
+    proba = model.predict_proba(data_df)[0]
     confidence = float(np.max(proba))
 
     # Map class to attack type

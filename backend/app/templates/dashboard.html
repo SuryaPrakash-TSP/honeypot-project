@@ -1,80 +1,149 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>🛡️ Honeypot Deception Dashboard</title>
+    <title>🛡️ Honeypot SOC - LIVE Threat Intelligence</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --bg-primary: #0a0a0f;
-            --accent-primary: #00f5ff;
+            --bg-secondary: #111127;
+            --bg-card: rgba(20,20,40,0.8);
+            --accent-cyber: #00f5ff;
+            --accent-purple: #7c3aed;
+            --accent-gold: #fbbf24;
+            --danger: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
             --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
-            --border: rgba(75,85,99,0.3);
+            --border: rgba(75,85,99,0.2);
+            --shadow: 0 20px 40px rgba(0,0,0,0.3);
         }
         * { margin:0; padding:0; box-sizing:border-box; }
         body { 
             font-family: 'Inter', sans-serif; 
-            background: var(--bg-primary); color: var(--text-primary); 
-            min-height:100vh; line-height:1.5;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            color: var(--text-primary); 
+            min-height:100vh; 
         }
-        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+        .container { max-width: 1600px; margin: 0 auto; padding: 2rem; }
         
+        /* Header */
         .header { 
             display: flex; justify-content: space-between; align-items: center; 
-            margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border);
+            margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border);
         }
-        .logo { font-size: 1.5rem; font-weight: 600; color: var(--accent-primary); }
-        .status { font-size: 0.9rem; color: var(--text-secondary); }
+        .logo { 
+            font-size: 1.8rem; font-weight: 700; 
+            background: linear-gradient(135deg, var(--accent-cyber), var(--accent-purple));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .status-bar { 
+            display: flex; gap: 2rem; font-size: 0.9rem; 
+            background: var(--bg-card); padding: 0.75rem 1.5rem; border-radius: 12px;
+        }
 
-        .metrics { 
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
-            gap: 1rem; margin-bottom: 2rem; 
+        /* Stats Grid */
+        .stats-grid { 
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
+            gap: 1.5rem; margin-bottom: 2.5rem; 
         }
-        .metric { 
-            text-align: center; padding: 1.5rem; 
-            background: rgba(20,20,35,0.8); border-radius: 12px; border: 1px solid var(--border);
+        .stat-card { 
+            background: var(--bg-card); border-radius: 16px; padding: 2rem; 
+            border: 1px solid var(--border); transition: all 0.3s ease;
+            position: relative; overflow: hidden;
         }
-        .metric-value { font-size: 2.5rem; font-weight: 600; margin-bottom: 0.25rem; }
-        .metric-label { font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; }
+        .stat-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+            background: linear-gradient(90deg, var(--accent-cyber), var(--accent-purple));
+        }
+        .stat-card:hover { 
+            transform: translateY(-5px); box-shadow: var(--shadow);
+            border-color: var(--accent-cyber);
+        }
+        .stat-icon { font-size: 2.5rem; margin-bottom: 1rem; opacity: 0.8; }
+        .stat-value { font-size: 2.8rem; font-weight: 700; margin-bottom: 0.25rem; }
+        .stat-label { font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
 
-        .actions { display: flex; gap: 1rem; margin-bottom: 2rem; }
+        /* ML Stats Card */
+        .ml-card { 
+            grid-column: span 2; background: linear-gradient(135deg, var(--bg-card), rgba(124,58,237,0.1));
+            border-image: linear-gradient(135deg, var(--accent-purple), var(--accent-cyber)) 1;
+        }
+        .ml-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+        .ml-badge { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; 
+                    background: rgba(124,58,237,0.2); border-radius: 25px; font-weight: 500; }
+
+        /* Actions */
+        .actions { display: flex; gap: 1rem; margin-bottom: 2.5rem; flex-wrap: wrap; }
         .btn { 
-            padding: 0.75rem 1.5rem; background: linear-gradient(135deg, var(--accent-primary), #7c3aed); 
-            color: #0a0a0f; border: none; border-radius: 8px; cursor: pointer; 
-            font-weight: 500; text-decoration: none; display: inline-block;
-            transition: transform 0.2s;
+            padding: 1rem 2rem; background: linear-gradient(135deg, var(--accent-cyber), var(--accent-purple)); 
+            color: #0a0a0f; border: none; border-radius: 12px; cursor: pointer; 
+            font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;
+            transition: all 0.3s ease; font-family: inherit;
         }
-        .btn:hover { transform: scale(1.05); }
+        .btn:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+        .btn-secondary { background: rgba(255,255,255,0.1); color: var(--text-primary); border: 1px solid var(--border); }
 
+        /* Events Table */
         .table-container { 
-            background: rgba(20,20,35,0.8); border-radius: 12px; overflow: hidden; 
-            border: 1px solid var(--border);
+            background: var(--bg-card); border-radius: 20px; overflow: hidden; 
+            border: 1px solid var(--border); box-shadow: var(--shadow);
+        }
+        .table-header { 
+            background: linear-gradient(135deg, rgba(26,26,46,0.9), rgba(20,20,40,0.9)); 
+            padding: 1.5rem 2rem; border-bottom: 1px solid var(--border);
         }
         table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 1rem 1.5rem; text-align: left; border-bottom: 1px solid var(--border); }
+        th, td { padding: 1.25rem 2rem; text-align: left; }
         th { 
-            background: rgba(26,26,46,0.9); font-weight: 500; font-size: 0.85rem; 
-            color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;
+            font-weight: 500; font-size: 0.85rem; color: var(--text-secondary); 
+            text-transform: uppercase; letter-spacing: 0.5px;
         }
-        tr:hover { background: rgba(0,245,255,0.05); }
+        tr { border-bottom: 1px solid rgba(75,85,99,0.1); transition: all 0.2s; }
+        tr:hover { background: rgba(0,245,255,0.08); transform: scale(1.01); }
         
-        .ip { color: var(--accent-primary); font-family: monospace; font-weight: 500; }
-        .severity { 
-            padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 500;
+        .ip { color: var(--accent-cyber); font-family: 'SF Mono', monospace; font-weight: 500; font-size: 0.95rem; }
+        .type-badge { 
+            padding: 0.375rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
+            text-transform: uppercase;
         }
-        .low { background: rgba(16,185,129,0.2); color: #10b981; }
-        .medium { background: rgba(245,158,11,0.2); color: #f59e0b; }
-        .high { background: rgba(239,68,68,0.2); color: #ef4444; }
+        .ssh { background: rgba(16,185,129,0.2); color: var(--success); }
+        .web { background: rgba(124,58,237,0.2); color: var(--accent-purple); }
+        .severity { 
+            padding: 0.375rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
+            text-transform: uppercase;
+        }
+        .low { background: rgba(16,185,129,0.2); color: var(--success); }
+        .medium { background: rgba(245,158,11,0.2); color: var(--warning); }
+        .high { background: linear-gradient(135deg, var(--danger), #dc2626); color: white; animation: pulse 2s infinite; }
 
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+        /* Alerts */
+        .alert { 
+            position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 350px;
+            background: linear-gradient(135deg, var(--danger), #dc2626); color: white;
+            padding: 1.5rem 2rem; border-radius: 16px; box-shadow: var(--shadow);
+            font-weight: 500; backdrop-filter: blur(10px);
+        }
+        @keyframes pulse { 0%,100%{opacity:1; transform: scale(1);} 50%{opacity:0.9; transform: scale(1.02);} }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .alert { animation: slideIn 0.3s ease; }
+
+        /* Responsive */
+        @media (max-width: 1024px) { 
+            .ml-stats { grid-template-columns: 1fr; }
+            .ml-card { grid-column: span 1; }
+        }
         @media (max-width: 768px) { 
-            .container { padding: 1rem; } 
-            .metrics { grid-template-columns: 1fr; }
-            .actions { flex-direction: column; }
+            .container { padding: 1.5rem; } 
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .status-bar { flex-direction: column; gap: 1rem; text-align: center; }
             table { font-size: 0.9rem; }
-            th, td { padding: 0.75rem 1rem; }
+            th, td { padding: 1rem 1rem; }
+            .actions { justify-content: center; }
         }
     </style>
 </head>
@@ -82,43 +151,76 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <div class="logo">🛡️  Honeypot Deception Dashboard</div>
-            <div class="status">{{ mode }} • {{ total_events }} attacks • Auto-refresh 15s</div>
-        </div>
-
-        <!-- Essential Metrics (KEEP) -->
-        <div class="metrics">
-            <div class="metric">
-                <div class="metric-value">{{ total_events }}</div>
-                <div class="metric-label">Total Attacks</div>
+            <div class="logo">
+                <i class="fas fa-shield-alt"></i> Honeypot Deception
             </div>
-            <div class="metric">
-                <div class="metric-value">{{ ssh_count }}</div>
-                <div class="metric-label">SSH Probes</div>
-            </div>
-            <div class="metric">
-                <div class="metric-value">{{ web_count }}</div>
-                <div class="metric-label">Web Traps</div>
+            <div class="status-bar">
+                <span><i class="fas fa-brain"></i> {{ mode }}</span>
+                <span><i class="fas fa-bolt"></i> {{ total_events }} Events</span>
+                <span><i class="fas fa-clock"></i> LIVE • Auto-refresh 10s</span>
             </div>
         </div>
 
-        <!-- Action Buttons (KEEP) -->
+        <!-- ✅ ML Stats + Core Metrics -->
+        <div class="stats-grid">
+            <!-- ML Intelligence Card -->
+            <div class="stat-card ml-card">
+                <div class="ml-stats">
+                    <div>
+                        <div class="ml-badge">
+                            <i class="fas fa-chart-line"></i> {{ model_info.accuracy if model_info else 'N/A' }}
+                        </div>
+                        <div style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-secondary);">
+                            {{ model_info.top_feature if model_info else 'N/A' }}
+                        </div>
+                    </div>
+                    <div>
+                        <div class="ml-badge">
+                            Classes: {{ model_info.classes|join(', ') if model_info else 'N/A' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Core Metrics -->
+            <div class="stat-card">
+                <div class="stat-icon" style="color: var(--accent-gold);"><i class="fas fa-bug"></i></div>
+                <div class="stat-value">{{ total_events }}</div>
+                <div class="stat-label">Total Threats</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="color: var(--success);"><i class="fas fa-terminal"></i></div>
+                <div class="stat-value">{{ ssh_count }}</div>
+                <div class="stat-label">SSH Attacks</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="color: var(--accent-purple);"><i class="fas fa-globe"></i></div>
+                <div class="stat-value">{{ web_count }}</div>
+                <div class="stat-label">Web Probes</div>
+            </div>
+        </div>
+
+        <!-- Actions -->
         <div class="actions">
-            <a href="/login" class="btn">🐟 Login Trap</a>
-            <a href="/events.csv" class="btn">📥 Export CSV</a>
-            <a href="/events" class="btn">🔍 JSON API</a>
+            <a href="/login" class="btn"><i class="fas fa-fish"></i> Login Trap</a>
+            <a href="/events.csv" class="btn"><i class="fas fa-download"></i> Export CSV</a>
+            <a href="/events" class="btn btn-secondary"><i class="fas fa-code"></i> JSON API</a>
+            <a href="/predict" class="btn btn-secondary"><i class="fas fa-robot"></i> ML Predict</a>
         </div>
 
-        <!-- Live Attack Feed (CORE - KEEP) -->
+        <!-- Events Feed -->
         <div class="table-container">
+            <div class="table-header">
+                <i class="fas fa-list"></i> Live Attack Feed (Last 50)
+            </div>
             <table>
                 <thead>
                     <tr>
-                        <th>Time (IST)</th>
-                        <th>IP</th>
-                        <th>Type</th>
-                        <th>Command</th>
-                        <th>Severity</th>
+                        <th><i class="fas fa-clock"></i> Time (IST)</th>
+                        <th><i class="fas fa-server"></i> Attacker IP</th>
+                        <th><i class="fas fa-plug"></i> Type</th>
+                        <th><i class="fas fa-terminal"></i> Command</th>
+                        <th><i class="fas fa-exclamation-triangle"></i> Severity</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -126,8 +228,8 @@
                     <tr>
                         <td>{{ event.timestamp_formatted }}</td>
                         <td><span class="ip">{{ event.source_ip }}</span></td>
-                        <td>{{ event.event_type.upper() }}</td>
-                        <td>{{ event.command[:60] or 'N/A' }}</td>
+                        <td><span class="type-badge {{ event.event_type }}">{{ event.event_type.upper() }}</span></td>
+                        <td style="max-width: 300px;">{{ event.command[:60] }}{% if event.command|length > 60 %}...{% endif %}</td>
                         <td><span class="severity {{ event.severity }}">{{ event.severity.upper() }}</span></td>
                     </tr>
                     {% endfor %}
@@ -136,7 +238,7 @@
         </div>
     </div>
 
-    <!-- WebSocket Real-time Alerts (KEEP) -->
+    <!-- Enhanced WebSocket Alerts -->
     <script>
         const ws = new WebSocket('ws://localhost:8000/ws');
         ws.onmessage = (e) => {
@@ -144,23 +246,24 @@
                 const data = JSON.parse(e.data);
                 if (data.alert) {
                     const alert = document.createElement('div');
-                    alert.style.cssText = `
-                        position: fixed; top: 20px; right: 20px; 
-                        background: linear-gradient(135deg, #ef4444, #dc2626); color: white;
-                        padding: 1rem 1.5rem; border-radius: 12px; z-index: 9999; 
-                        font-weight: 500; box-shadow: 0 10px 30px rgba(239,68,68,0.4);
-                        font-family: 'Inter', sans-serif;
-                    `;
-                    alert.textContent = `🚨 ${data.alert}`;
+                    alert.className = 'alert';
+                    alert.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${data.alert}`;
                     document.body.appendChild(alert);
-                    setTimeout(() => alert.remove(), 5000);
+                    setTimeout(() => alert.remove(), 6000);
                 }
             } catch(e) {}
         };
 
-        // Auto-refresh
-        setInterval(() => location.reload(), 15000);
+        // Auto-refresh + smooth reload indicator
+        let refreshCount = 0;
+        setInterval(() => {
+            refreshCount++;
+            document.querySelector('.status-bar').innerHTML = 
+                `<span><i class="fas fa-brain"></i> ${document.querySelector('.status-bar span').textContent.split(' ')[0]}</span>
+                 <span><i class="fas fa-bolt"></i> ${document.querySelector('.stat-value').textContent} Events</span>
+                 <span><i class="fas fa-sync-alt fa-spin"></i> Refreshing... (${refreshCount})</span>`;
+            location.reload();
+        }, 10000);
     </script>
 </body>
 </html>
-
