@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>🛡️ Honeypot SOC - LIVE Threat Intelligence</title>
+    <title>Honeypot SOC – AI‑Driven Threat Detection</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --bg-primary: #0a0a0f;
             --bg-secondary: #111127;
-            --bg-card: rgba(20,20,40,0.8);
+            --bg-card: rgba(20, 20, 40, 0.85);
             --accent-cyber: #00f5ff;
             --accent-purple: #7c3aed;
             --accent-gold: #fbbf24;
@@ -19,144 +19,139 @@
             --warning: #f59e0b;
             --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
-            --border: rgba(75,85,99,0.2);
-            --shadow: 0 20px 40px rgba(0,0,0,0.3);
+            --border: rgba(75, 85, 99, 0.2);
+            --shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
         }
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body { 
-            font-family: 'Inter', sans-serif; 
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
             background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
-            color: var(--text-primary); 
-            min-height:100vh; 
+            color: var(--text-primary);
+            min-height: 100vh;
         }
         .container { max-width: 1800px; margin: 0 auto; padding: 2rem; }
-        
+
         /* Header */
-        .header { 
-            display: flex; justify-content: space-between; align-items: center; 
-            margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border);
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border);
         }
-        .logo { 
-            font-size: 1.8rem; font-weight: 700; 
+        .logo {
+            font-size: 1.6rem; font-weight: 600;
             background: linear-gradient(135deg, var(--accent-cyber), var(--accent-purple));
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
-        .status-bar { 
-            display: flex; gap: 2rem; font-size: 0.9rem; 
-            background: var(--bg-card); padding: 0.75rem 1.5rem; border-radius: 12px;
+        .status-bar {
+            display: flex; gap: 1.8rem; font-size: 0.85rem; font-weight: 500;
+            color: var(--text-secondary);
         }
 
         /* Stats Grid */
-        .stats-grid { 
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
-            gap: 1.5rem; margin-bottom: 2.5rem; 
+        .stats-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.4rem; margin-bottom: 2rem;
         }
-        .stat-card { 
-            background: var(--bg-card); border-radius: 16px; padding: 2rem; 
-            border: 1px solid var(--border); transition: all 0.3s ease;
+        .stat-card {
+            background: var(--bg-card); border-radius: 14px; padding: 1.6rem 1.8rem;
+            border: 1px solid var(--border); transition: transform 0.2s ease, box-shadow 0.2s ease;
             position: relative; overflow: hidden;
         }
         .stat-card::before {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
             background: linear-gradient(90deg, var(--accent-cyber), var(--accent-purple));
         }
-        .stat-card:hover { 
-            transform: translateY(-5px); box-shadow: var(--shadow);
-            border-color: var(--accent-cyber);
+        .stat-card:hover {
+            transform: translateY(-4px); box-shadow: var(--shadow);
         }
-        .stat-icon { font-size: 2.5rem; margin-bottom: 1rem; opacity: 0.8; }
-        .stat-value { font-size: 2.8rem; font-weight: 700; margin-bottom: 0.25rem; }
-        .stat-label { font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
+        .stat-icon { font-size: 2.2rem; margin-bottom: 0.6rem; opacity: 0.9; }
+        .stat-value { font-size: 2.4rem; font-weight: 600; margin-bottom: 0.2rem; }
+        .stat-label { font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
 
-        /* ML Stats Card */
-        .ml-card { 
-            grid-column: span 2; background: linear-gradient(135deg, var(--bg-card), rgba(124,58,237,0.1));
-            border-image: linear-gradient(135deg, var(--accent-purple), var(--accent-cyber)) 1;
+        /* ML / Model Stats Card */
+        .ml-card {
+            grid-column: span 1; background: var(--bg-card);
         }
-        .ml-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
-        .ml-badge { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; 
-                    background: rgba(124,58,237,0.2); border-radius: 25px; font-weight: 500; }
+        .ml-badge {
+            padding: 0.4rem 1rem; border-radius: 18px; font-size: 0.85rem; font-weight: 500;
+            background: rgba(124, 58, 237, 0.2); color: var(--accent-purple);
+        }
 
         /* Actions */
-        .actions { display: flex; gap: 1rem; margin-bottom: 2.5rem; flex-wrap: wrap; }
-        .btn { 
-            padding: 1rem 2rem; background: linear-gradient(135deg, var(--accent-cyber), var(--accent-purple)); 
-            color: #0a0a0f; border: none; border-radius: 12px; cursor: pointer; 
-            font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;
-            transition: all 0.3s ease; font-family: inherit;
+        .actions {
+            display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;
         }
-        .btn:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
-        .btn-secondary { background: rgba(255,255,255,0.1); color: var(--text-primary); border: 1px solid var(--border); }
+        .btn {
+            padding: 0.75rem 1.5rem; background: linear-gradient(135deg, var(--accent-cyber), var(--accent-purple));
+            color: #0a0a0f; border: none; border-radius: 10px; cursor: pointer;
+            font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;
+            transition: all 0.2s ease; font-family: inherit; font-size: 0.9rem;
+        }
+        .btn:hover {
+            transform: translateY(-1px); box-shadow: var(--shadow);
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08); color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
 
         /* Events Table */
-        .table-container { 
-            background: var(--bg-card); border-radius: 20px; overflow: hidden; 
+        .table-container {
+            background: var(--bg-card); border-radius: 18px; overflow: hidden;
             border: 1px solid var(--border); box-shadow: var(--shadow);
         }
-        .table-header { 
-            background: linear-gradient(135deg, rgba(26,26,46,0.9), rgba(20,20,40,0.9)); 
-            padding: 1.5rem 2rem; border-bottom: 1px solid var(--border);
+        .table-header {
+            background: linear-gradient(135deg, rgba(26,26,46,0.9), rgba(20,20,40,0.9));
+            padding: 1.2rem 1.6rem; border-bottom: 1px solid var(--border);
+            font-size: 0.95rem; color: var(--text-secondary);
         }
         table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 1.25rem 1.5rem; text-align: left; }
-        th { 
-            font-weight: 500; font-size: 0.85rem; color: var(--text-secondary); 
+        th, td { padding: 0.9rem 1.2rem; text-align: left; }
+        th {
+            font-weight: 500; font-size: 0.8rem; color: var(--text-secondary);
             text-transform: uppercase; letter-spacing: 0.5px;
         }
-        tr { border-bottom: 1px solid rgba(75,85,99,0.1); transition: all 0.2s; }
-        tr:hover { background: rgba(0,245,255,0.08); transform: scale(1.01); }
-        
-        .ip { color: var(--accent-cyber); font-family: 'SF Mono', monospace; font-weight: 500; font-size: 0.95rem; }
-        .type-badge { 
-            padding: 0.375rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
+        tr {
+            border-bottom: 1px solid rgba(75, 85, 99, 0.1);
+            transition: background 0.15s ease;
+        }
+        tr:hover {
+            background: rgba(0, 245, 255, 0.06);
+        }
+        .ip {
+            color: var(--accent-cyber); font-family: 'SF Mono', monospace; font-weight: 500; font-size: 0.9rem;
+        }
+        .type-badge {
+            padding: 0.3rem 0.8rem; border-radius: 16px; font-size: 0.75rem; font-weight: 600;
             text-transform: uppercase;
         }
         .ssh { background: rgba(16,185,129,0.2); color: var(--success); }
         .web { background: rgba(124,58,237,0.2); color: var(--accent-purple); }
-        
-        /* NEW: Attack Class Badges */
-        .attack-class { 
-            padding: 0.375rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
+
+        /* Attack Class / Severity */
+        .attack-class,
+        .severity {
+            padding: 0.3rem 0.8rem; border-radius: 16px; font-size: 0.75rem; font-weight: 600;
             text-transform: uppercase;
         }
         .normal { background: rgba(16,185,129,0.2); color: var(--success); }
-        .brute-force { background: rgba(245,158,11,0.2); color: var(--warning); }
-        .exploitation { background: linear-gradient(135deg, var(--danger), #dc2626); color: white; animation: pulse 2s infinite; }
-        
-        .severity { 
-            padding: 0.375rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
-            text-transform: uppercase;
-        }
+        .attack { background: linear-gradient(135deg, var(--danger), #dc2626); color: white; }
         .low { background: rgba(16,185,129,0.2); color: var(--success); }
         .medium { background: rgba(245,158,11,0.2); color: var(--warning); }
-        .high { background: linear-gradient(135deg, var(--danger), #dc2626); color: white; animation: pulse 2s infinite; }
-
-        /* Alerts */
-        .alert { 
-            position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 350px;
-            background: linear-gradient(135deg, var(--danger), #dc2626); color: white;
-            padding: 1.5rem 2rem; border-radius: 16px; box-shadow: var(--shadow);
-            font-weight: 500; backdrop-filter: blur(10px);
-        }
-        @keyframes pulse { 0%,100%{opacity:1; transform: scale(1);} 50%{opacity:0.9; transform: scale(1.02);} }
-        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        .alert { animation: slideIn 0.3s ease; }
+        .high { background: linear-gradient(135deg, var(--danger), #dc2626); color: white; }
 
         /* Responsive */
-        @media (max-width: 1400px) { 
+        @media (max-width: 1400px) {
             .table-container { overflow-x: auto; }
-            th, td { padding: 1rem 1rem; min-width: 120px; }
+            th, td { min-width: 100px; }
         }
-        @media (max-width: 1024px) { 
-            .ml-stats { grid-template-columns: 1fr; }
-            .ml-card { grid-column: span 1; }
-        }
-        @media (max-width: 768px) { 
-            .container { padding: 1.5rem; } 
+        @media (max-width: 1024px) {
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
-            .status-bar { flex-direction: column; gap: 1rem; text-align: center; }
-            table { font-size: 0.85rem; }
-            th, td { padding: 0.75rem 0.5rem; }
+        }
+        @media (max-width: 768px) {
+            .container { padding: 1.2rem; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .status-bar { flex-direction: column; gap: 0.8rem; text-align: center; }
+            table { font-size: 0.8rem; }
+            th, td { padding: 0.5rem 0.4rem; }
         }
     </style>
 </head>
@@ -165,37 +160,17 @@
         <!-- Header -->
         <div class="header">
             <div class="logo">
-                <i class="fas fa-shield-alt"></i> Honeypot Deception • Phase 7.5
+                <i class="fas fa-shield-alt"></i> Honeypot SOC
             </div>
             <div class="status-bar">
-                <span><i class="fas fa-brain"></i> {{ mode }}</span>
+                <span><i class="fas fa-robot"></i> {{ mode }}</span>
                 <span><i class="fas fa-bolt"></i> {{ total_events }} Events</span>
                 <span><i class="fas fa-wifi"></i> LIVE WebSocket</span>
             </div>
         </div>
 
-        <!-- ML Stats + Core Metrics -->
+        <!-- Core Metrics -->
         <div class="stats-grid">
-            <!-- ML Intelligence Card -->
-            <div class="stat-card ml-card">
-                <div class="ml-stats">
-                    <div>
-                        <div class="ml-badge">
-                            <i class="fas fa-chart-line"></i> {{ model_info.accuracy if model_info else 'N/A' }}
-                        </div>
-                        <div style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-secondary);">
-                            {{ model_info.top_feature if model_info else 'N/A' }}
-                        </div>
-                    </div>
-                    <div>
-                        <div class="ml-badge">
-                            Classes: {{ model_info.classes|join(', ') if model_info else 'N/A' }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Core Metrics -->
             <div class="stat-card">
                 <div class="stat-icon" style="color: var(--accent-gold);"><i class="fas fa-bug"></i></div>
                 <div class="stat-value">{{ total_events }}</div>
@@ -211,20 +186,30 @@
                 <div class="stat-value">{{ web_count }}</div>
                 <div class="stat-label">Web Probes</div>
             </div>
+            <div class="stat-card ml-card">
+                <div class="ml-badge">
+                    <i class="fas fa-robot"></i>
+                    {% if model_info %}
+                        ML {{ model_info.accuracy }} ({{ model_info.top_features|join(', ') }})
+                    {% else %}
+                        RULE‑BASED
+                    {% endif %}
+                </div>
+            </div>
         </div>
 
         <!-- Actions -->
         <div class="actions">
             <a href="/login" class="btn"><i class="fas fa-fish"></i> Login Trap</a>
             <a href="/events.csv" class="btn"><i class="fas fa-download"></i> Export CSV</a>
-            <a href="/events" class="btn btn-secondary"><i class="fas fa-code"></i> JSON API</a>
+            <a href="/events" class="btn btn-secondary"><i class="fas fa-code"></i> Events API</a>
             <a href="/predict" class="btn btn-secondary"><i class="fas fa-robot"></i> ML Predict</a>
         </div>
 
         <!-- Events Feed -->
         <div class="table-container">
             <div class="table-header">
-                <i class="fas fa-list"></i> Live Attack Feed (Last 50) • <span id="live-count">{{ events|length }}</span> Live
+                <i class="fas fa-list"></i> Live Attack Feed (Last 50) • <span id="live-count">{{ events|length }}</span> Active
             </div>
             <table id="events-table">
                 <thead>
@@ -242,10 +227,28 @@
                     <tr>
                         <td>{{ event.timestamp_formatted }}</td>
                         <td><span class="ip">{{ event.source_ip }}</span></td>
-                        <td><span class="type-badge {{ event.event_type }}">{{ event.event_type.upper() }}</span></td>
-                        <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis;" title="{{ event.command }}">{{ event.command[:50] }}{% if event.command|length > 50 %}...{% endif %}</td>
-                        <td><span class="attack-class {{ event.attack_class }}">{{ event.attack_class.replace('-', ' ').title() }}</span></td>
-                        <td><span class="severity {{ event.severity }}">{{ event.severity.upper() }}</span></td>
+                        <td>
+                            <span class="type-badge {{ event.event_type }}">
+                                {{ event.event_type.upper() }}
+                            </span>
+                        </td>
+                        <td
+                            style="max-width: 250px; overflow: hidden; text-overflow: ellipsis;"
+                            title="{{ event.command }}"
+                        >
+                            {{ event.command[:50] }}
+                            {% if event.command|length > 50 %}...{% endif %}
+                        </td>
+                        <td>
+                            <span class="attack-class {{ event.attack_class }}">
+                                {{ event.attack_class.upper() }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="severity {{ event.severity }}">
+                                {{ event.severity.upper() }}
+                            </span>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -253,86 +256,71 @@
         </div>
     </div>
 
-    <!-- Enhanced WebSocket + Live Updates -->
+    <!-- WebSocket Live Updates -->
     <script>
-        const ws = new WebSocket('ws://localhost:8000/ws');
-        const tbody = document.getElementById('events-tbody');
-        const liveCount = document.getElementById('live-count');
-        
+        const ws = new WebSocket("ws://localhost:8000/ws");
+        const tbody = document.getElementById("events-tbody");
+        const liveCount = document.getElementById("live-count");
+
         ws.onmessage = (e) => {
             try {
                 const data = JSON.parse(e.data);
-                if (data.type === 'new_event') {
+                if (data.type === "new_event") {
                     const event = data.event;
                     const row = tbody.insertRow(0);
-                    
-                    // Time
+
                     row.insertCell(0).textContent = event.time;
-                    // IP
+
                     const ipCell = row.insertCell(1);
                     ipCell.innerHTML = `<span class="ip">${event.ip}</span>`;
-                    // Type
+
                     const typeCell = row.insertCell(2);
-                    const typeClass = event.type === 'ssh' ? 'ssh' : 'web';
+                    const typeClass = event.type === "ssh" ? "ssh" : "web";
                     typeCell.innerHTML = `<span class="type-badge ${typeClass}">${event.type.toUpperCase()}</span>`;
-                    // Command
+
                     const cmdCell = row.insertCell(3);
-                    cmdCell.style.maxWidth = '250px';
-                    cmdCell.style.overflow = 'hidden';
-                    cmdCell.style.textOverflow = 'ellipsis';
+                    cmdCell.style.maxWidth = "250px";
+                    cmdCell.style.overflow = "hidden";
+                    cmdCell.style.textOverflow = "ellipsis";
                     cmdCell.textContent = event.cmd;
                     cmdCell.title = event.cmd;
-                    // Attack Class
+
                     const attackCell = row.insertCell(4);
-                    let attackClass = event.attack_class || 'normal';
-                    attackClass = attackClass.replace('-', ' ');
-                    const attackBadgeClass = event.attack_class === 'exploitation' ? 'exploitation' : 
-                                           event.attack_class === 'brute-force' ? 'brute-force' : 'normal';
-                    attackCell.innerHTML = `<span class="attack-class ${attackBadgeClass}">${attackClass.toUpperCase()}</span>`;
-                    // Severity
+                    const attackClass = event.attack_class || "normal";
+                    attackCell.innerHTML = `<span class="attack-class ${attackClass}">${attackClass.toUpperCase()}</span>`;
+
                     const severityCell = row.insertCell(5);
-                    const severityClass = event.severity.toLowerCase();
+                    const severityClass = (event.severity || "LOW").toLowerCase();
                     severityCell.innerHTML = `<span class="severity ${severityClass}">${event.severity.toUpperCase()}</span>`;
-                    
-                    // Limit to 50 rows
+
                     if (tbody.rows.length > 50) {
                         tbody.deleteRow(50);
                     }
-                    
-                    // Update counter
+
                     liveCount.textContent = tbody.rows.length;
-                    
-                    // Flash new row
-                    row.style.background = 'rgba(0, 245, 255, 0.2)';
+
+                    row.style.background = "rgba(0, 245, 255, 0.15)";
                     setTimeout(() => {
-                        row.style.background = '';
-                    }, 3000);
-                } else if (data.alert) {
-                    const alert = document.createElement('div');
-                    alert.className = 'alert';
-                    alert.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${data.alert}`;
-                    document.body.appendChild(alert);
-                    setTimeout(() => alert.remove(), 6000);
+                        row.style.background = "";
+                    }, 2500);
                 }
-            } catch(e) {
-                console.error('WebSocket error:', e);
+            } catch (err) {
+                console.error("WebSocket message error:", err);
             }
         };
 
-        // Graceful WebSocket handling
         ws.onclose = () => {
-            console.log('WebSocket disconnected - reconnecting...');
+            console.log("WebSocket disconnected – reconnecting...");
             setTimeout(() => {
                 location.reload();
             }, 5000);
         };
 
-        // Update stats every 30s (gentle refresh, preserves WebSocket)
+        // Light periodic refresh (counters only)
         setInterval(() => {
-            // Only refresh stats, not full page
-            fetch('/').then(r => r.json()).then(data => {
-                document.querySelector('.stat-value').textContent = data.events;
-                liveCount.textContent = tbody.rows.length;
+            fetch("/").then(r => r.json()).then(info => {
+                document.querySelector("[data-stat='events']")
+                    ?.querySelector(".stat-value")?.textContent = info.events;
             });
         }, 30000);
     </script>
