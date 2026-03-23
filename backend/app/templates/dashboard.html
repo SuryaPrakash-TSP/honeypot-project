@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>🛡️ Honeypot SOC - LIVE Threat Intelligence</title>
+    <title>Honeypot SOC</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -10,7 +10,7 @@
         :root {
             --bg-primary: #0a0a0f;
             --bg-secondary: #111127;
-            --bg-card: rgba(20,20,40,0.8);
+            --bg-card: rgba(20, 20, 40, 0.8);
             --accent-cyber: #00f5ff;
             --accent-purple: #7c3aed;
             --accent-gold: #fbbf24;
@@ -19,213 +19,399 @@
             --warning: #f59e0b;
             --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
-            --border: rgba(75,85,99,0.2);
-            --shadow: 0 20px 40px rgba(0,0,0,0.3);
-        }
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
-            color: var(--text-primary); 
-            min-height:100vh; 
-        }
-        .container { max-width: 1800px; margin: 0 auto; padding: 2rem; }
-        
-        /* Header */
-        .header { 
-            display: flex; justify-content: space-between; align-items: center; 
-            margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border);
-        }
-        .logo { 
-            font-size: 1.8rem; font-weight: 700; 
-            background: linear-gradient(135deg, var(--accent-cyber), var(--accent-purple));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
-        .status-bar { 
-            display: flex; gap: 2rem; font-size: 0.9rem; 
-            background: var(--bg-card); padding: 0.75rem 1.5rem; border-radius: 12px;
+            --border: rgba(75, 85, 99, 0.2);
+            --shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
         }
 
-        /* Stats Grid */
-        .stats-grid { 
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
-            gap: 1.5rem; margin-bottom: 2.5rem; 
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        .stat-card { 
-            background: var(--bg-card); border-radius: 16px; padding: 2rem; 
-            border: 1px solid var(--border); transition: all 0.3s ease;
-            position: relative; overflow: hidden;
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
         }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-cyber), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-bar {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.9rem;
+            background: var(--bg-card);
+            padding: 0.75rem 1.25rem;
+            border-radius: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(16, 185, 129, 0.15);
+            border-radius: 20px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 2rem;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
         .stat-card::before {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
             background: linear-gradient(90deg, var(--accent-cyber), var(--accent-purple));
         }
-        .stat-card:hover { 
-            transform: translateY(-5px); box-shadow: var(--shadow);
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow);
             border-color: var(--accent-cyber);
         }
-        .stat-icon { font-size: 2.5rem; margin-bottom: 1rem; opacity: 0.8; }
-        .stat-value { font-size: 2.8rem; font-weight: 700; margin-bottom: 0.25rem; }
-        .stat-label { font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
 
-        /* ML Stats Card */
-        .ml-card { 
-            grid-column: span 2; background: linear-gradient(135deg, var(--bg-card), rgba(124,58,237,0.1));
-            border-image: linear-gradient(135deg, var(--accent-purple), var(--accent-cyber)) 1;
+        .stat-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            opacity: 0.8;
         }
-        .ml-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
-        .ml-badge { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; 
-                    background: rgba(124,58,237,0.2); border-radius: 25px; font-weight: 500; }
 
-        /* Actions */
-        .actions { display: flex; gap: 1rem; margin-bottom: 2.5rem; flex-wrap: wrap; }
-        .btn { 
-            padding: 1rem 2rem; background: linear-gradient(135deg, var(--accent-cyber), var(--accent-purple)); 
-            color: #0a0a0f; border: none; border-radius: 12px; cursor: pointer; 
-            font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;
-            transition: all 0.3s ease; font-family: inherit;
+        .stat-value {
+            font-size: 2.8rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
         }
-        .btn:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
-        .btn-secondary { background: rgba(255,255,255,0.1); color: var(--text-primary); border: 1px solid var(--border); }
 
-        /* Events Table */
-        .table-container { 
-            background: var(--bg-card); border-radius: 20px; overflow: hidden; 
-            border: 1px solid var(--border); box-shadow: var(--shadow);
-        }
-        .table-header { 
-            background: linear-gradient(135deg, rgba(26,26,46,0.9), rgba(20,20,40,0.9)); 
-            padding: 1.5rem 2rem; border-bottom: 1px solid var(--border);
-        }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 1.25rem 1.5rem; text-align: left; }
-        th { 
-            font-weight: 500; font-size: 0.85rem; color: var(--text-secondary); 
-            text-transform: uppercase; letter-spacing: 0.5px;
-        }
-        tr { border-bottom: 1px solid rgba(75,85,99,0.1); transition: all 0.2s; }
-        tr:hover { background: rgba(0,245,255,0.08); transform: scale(1.01); }
-        
-        .ip { color: var(--accent-cyber); font-family: 'SF Mono', monospace; font-weight: 500; font-size: 0.95rem; }
-        .type-badge { 
-            padding: 0.375rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
             text-transform: uppercase;
+            letter-spacing: 1px;
         }
-        .ssh { background: rgba(16,185,129,0.2); color: var(--success); }
-        .web { background: rgba(124,58,237,0.2); color: var(--accent-purple); }
-        
-        /* NEW: Attack Class Badges */
-        .attack-class { 
-            padding: 0.375rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
-            text-transform: uppercase;
-        }
-        .normal { background: rgba(16,185,129,0.2); color: var(--success); }
-        .brute-force { background: rgba(245,158,11,0.2); color: var(--warning); }
-        .exploitation { background: linear-gradient(135deg, var(--danger), #dc2626); color: white; animation: pulse 2s infinite; }
-        
-        .severity { 
-            padding: 0.375rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
-            text-transform: uppercase;
-        }
-        .low { background: rgba(16,185,129,0.2); color: var(--success); }
-        .medium { background: rgba(245,158,11,0.2); color: var(--warning); }
-        .high { background: linear-gradient(135deg, var(--danger), #dc2626); color: white; animation: pulse 2s infinite; }
 
-        /* Alerts */
-        .alert { 
-            position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 350px;
-            background: linear-gradient(135deg, var(--danger), #dc2626); color: white;
-            padding: 1.5rem 2rem; border-radius: 16px; box-shadow: var(--shadow);
-            font-weight: 500; backdrop-filter: blur(10px);
+        .ml-card {
+            grid-column: span 2;
+            background: linear-gradient(135deg, var(--bg-card), rgba(124, 58, 237, 0.1));
         }
-        @keyframes pulse { 0%,100%{opacity:1; transform: scale(1);} 50%{opacity:0.9; transform: scale(1.02);} }
-        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        .alert { animation: slideIn 0.3s ease; }
 
-        /* Responsive */
-        @media (max-width: 1400px) { 
-            .table-container { overflow-x: auto; }
-            th, td { padding: 1rem 1rem; min-width: 120px; }
+        .ml-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
         }
-        @media (max-width: 1024px) { 
-            .ml-stats { grid-template-columns: 1fr; }
-            .ml-card { grid-column: span 1; }
+
+        .ml-model {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
         }
-        @media (max-width: 768px) { 
-            .container { padding: 1.5rem; } 
-            .stats-grid { grid-template-columns: repeat(2, 1fr); }
-            .status-bar { flex-direction: column; gap: 1rem; text-align: center; }
-            table { font-size: 0.85rem; }
-            th, td { padding: 0.75rem 0.5rem; }
+
+        .ml-header {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .ml-accuracy {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--success);
+            margin-bottom: 0.35rem;
+        }
+
+        .ml-version {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .table-container {
+            background: var(--bg-card);
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+
+        .table-header {
+            background: linear-gradient(135deg, rgba(26, 26, 46, 0.9), rgba(20, 20, 40, 0.9));
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 1.25rem 1.5rem;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        th {
+            font-weight: 500;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        tr {
+            border-bottom: 1px solid rgba(75, 85, 99, 0.1);
+            transition: all 0.2s;
+        }
+
+        tr:hover {
+            background: rgba(0, 245, 255, 0.08);
+        }
+
+        tr.new-row {
+            background: rgba(0, 245, 255, 0.15) !important;
+            animation: flash 2s;
+        }
+
+        .ip {
+            color: var(--accent-cyber);
+            font-family: 'SF Mono', monospace;
+            font-weight: 500;
+        }
+
+        .type-badge,
+        .attack-class,
+        .severity {
+            padding: 0.375rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            display: inline-block;
+            white-space: nowrap;
+        }
+
+        .ssh {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .web {
+            background: rgba(124, 58, 237, 0.2);
+            color: var(--accent-purple);
+        }
+
+        .normal {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .brute-force {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+        }
+
+        .exploitation {
+            background: linear-gradient(135deg, var(--danger), #dc2626);
+            color: white;
+        }
+
+        .low {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .medium {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+        }
+
+        .high {
+            background: linear-gradient(135deg, var(--danger), #dc2626);
+            color: white;
+        }
+
+        .cmd-cell {
+            max-width: 250px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        @keyframes flash {
+            0%, 100% { background: rgba(0, 245, 255, 0.15); }
+            50% { background: rgba(0, 245, 255, 0.3); }
+        }
+
+        @media (max-width: 1400px) {
+            .table-container {
+                overflow-x: auto;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .ml-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .ml-card {
+                grid-column: span 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1.25rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .table-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            th, td {
+                padding: 1rem;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
         <div class="header">
             <div class="logo">
-                <i class="fas fa-shield-alt"></i> Honeypot Deception • Phase 7.5
+                <i class="fas fa-shield-alt"></i> Honeypot SOC • {{ phase }}
             </div>
             <div class="status-bar">
-                <span><i class="fas fa-brain"></i> {{ mode }}</span>
-                <span><i class="fas fa-bolt"></i> {{ total_events }} Events</span>
-                <span><i class="fas fa-wifi"></i> LIVE WebSocket</span>
+                <span class="status-indicator" id="ws-status">
+                    <i class="fas fa-wifi"></i> Connecting WebSocket...
+                </span>
+                <span id="total-events">
+                    <i class="fas fa-bolt"></i> {{ total_events }} Events
+                </span>
             </div>
         </div>
 
-        <!-- ML Stats + Core Metrics -->
         <div class="stats-grid">
-            <!-- ML Intelligence Card -->
             <div class="stat-card ml-card">
                 <div class="ml-stats">
-                    <div>
-                        <div class="ml-badge">
-                            <i class="fas fa-chart-line"></i> {{ model_info.accuracy if model_info else 'N/A' }}
+                    <div class="ml-model">
+                        <div class="ml-header">RF v7.1</div>
+                        <div class="ml-accuracy">
+                            {{ "%.1f"|format(rf_info.accuracy * 100) if rf_info and rf_info.accuracy is defined else 'N/A' }}%
                         </div>
-                        <div style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-secondary);">
-                            {{ model_info.top_feature if model_info else 'N/A' }}
+                        <div class="ml-version">
+                            {{ rf_info.version if rf_info and rf_info.version is defined else 'Disabled' }}
                         </div>
                     </div>
-                    <div>
-                        <div class="ml-badge">
-                            Classes: {{ model_info.classes|join(', ') if model_info else 'N/A' }}
+
+                    <div class="ml-model">
+                        <div class="ml-header">LSTM v8.1</div>
+                        <div class="ml-accuracy">
+                            {{ "%.1f"|format(lstm_info.accuracy * 100) if lstm_info and lstm_info.accuracy is defined else 'N/A' }}%
                         </div>
+                        <div class="ml-version">
+                            {{ lstm_info.version if lstm_info and lstm_info.version is defined else 'Disabled' }}
+                        </div>
+                    </div>
+
+                    <div class="ml-model">
+                        <div class="ml-header">Hybrid</div>
+                        <div class="ml-accuracy">Live</div>
+                        <div class="ml-version">{{ hybrid_info if hybrid_info else 'Adaptive Fusion Active' }}</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Core Metrics -->
             <div class="stat-card">
-                <div class="stat-icon" style="color: var(--accent-gold);"><i class="fas fa-bug"></i></div>
-                <div class="stat-value">{{ total_events }}</div>
-                <div class="stat-label">Total Threats</div>
+                <div class="stat-icon" style="color: var(--accent-gold);">
+                    <i class="fas fa-bug"></i>
+                </div>
+                <div class="stat-value" id="stat-total">{{ total_events }}</div>
+                <div class="stat-label">Total Events</div>
             </div>
+
             <div class="stat-card">
-                <div class="stat-icon" style="color: var(--success);"><i class="fas fa-terminal"></i></div>
-                <div class="stat-value">{{ ssh_count }}</div>
+                <div class="stat-icon" style="color: var(--success);">
+                    <i class="fas fa-terminal"></i>
+                </div>
+                <div class="stat-value" id="stat-ssh">{{ ssh_count }}</div>
                 <div class="stat-label">SSH Attacks</div>
             </div>
+
             <div class="stat-card">
-                <div class="stat-icon" style="color: var(--accent-purple);"><i class="fas fa-globe"></i></div>
-                <div class="stat-value">{{ web_count }}</div>
+                <div class="stat-icon" style="color: var(--accent-purple);">
+                    <i class="fas fa-globe"></i>
+                </div>
+                <div class="stat-value" id="stat-web">{{ web_count }}</div>
                 <div class="stat-label">Web Probes</div>
             </div>
         </div>
 
-        <!-- Actions -->
-        <div class="actions">
-            <a href="/login" class="btn"><i class="fas fa-fish"></i> Login Trap</a>
-            <a href="/events.csv" class="btn"><i class="fas fa-download"></i> Export CSV</a>
-            <a href="/events" class="btn btn-secondary"><i class="fas fa-code"></i> JSON API</a>
-            <a href="/predict" class="btn btn-secondary"><i class="fas fa-robot"></i> ML Predict</a>
-        </div>
-
-        <!-- Events Feed -->
         <div class="table-container">
             <div class="table-header">
-                <i class="fas fa-list"></i> Live Attack Feed (Last 50) • <span id="live-count">{{ events|length }}</span> Live
+                <div>
+                    <i class="fas fa-list"></i>
+                    Live Attack Feed (Last 50) • <span id="live-count">{{ events|length }}</span> Events
+                </div>
+                <div id="ws-indicator" style="font-size: 0.85rem; color: var(--text-secondary);">
+                    <i class="fas fa-circle" style="color: var(--success);"></i> WebSocket Live
+                </div>
             </div>
+
             <table id="events-table">
                 <thead>
                     <tr>
@@ -242,10 +428,24 @@
                     <tr>
                         <td>{{ event.timestamp_formatted }}</td>
                         <td><span class="ip">{{ event.source_ip }}</span></td>
-                        <td><span class="type-badge {{ event.event_type }}">{{ event.event_type.upper() }}</span></td>
-                        <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis;" title="{{ event.command }}">{{ event.command[:50] }}{% if event.command|length > 50 %}...{% endif %}</td>
-                        <td><span class="attack-class {{ event.attack_class }}">{{ event.attack_class.replace('-', ' ').title() }}</span></td>
-                        <td><span class="severity {{ event.severity }}">{{ event.severity.upper() }}</span></td>
+                        <td>
+                            <span class="type-badge {{ event.event_type }}">
+                                {{ event.event_type.upper() }}
+                            </span>
+                        </td>
+                        <td class="cmd-cell" title="{{ event.command or '' }}">
+                            {{ (event.command or '')[:50] }}{% if event.command and event.command|length > 50 %}...{% endif %}
+                        </td>
+                        <td>
+                            <span class="attack-class {{ event.attack_class }}">
+                                {{ event.attack_class.replace('-', ' ').title() }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="severity {{ event.severity.lower() }}">
+                                {{ event.severity.upper() }}
+                            </span>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -253,88 +453,169 @@
         </div>
     </div>
 
-    <!-- Enhanced WebSocket + Live Updates -->
     <script>
-        const ws = new WebSocket('ws://localhost:8000/ws');
-        const tbody = document.getElementById('events-tbody');
-        const liveCount = document.getElementById('live-count');
-        
-        ws.onmessage = (e) => {
-            try {
-                const data = JSON.parse(e.data);
-                if (data.type === 'new_event') {
-                    const event = data.event;
-                    const row = tbody.insertRow(0);
-                    
-                    // Time
-                    row.insertCell(0).textContent = event.time;
-                    // IP
-                    const ipCell = row.insertCell(1);
-                    ipCell.innerHTML = `<span class="ip">${event.ip}</span>`;
-                    // Type
-                    const typeCell = row.insertCell(2);
-                    const typeClass = event.type === 'ssh' ? 'ssh' : 'web';
-                    typeCell.innerHTML = `<span class="type-badge ${typeClass}">${event.type.toUpperCase()}</span>`;
-                    // Command
-                    const cmdCell = row.insertCell(3);
-                    cmdCell.style.maxWidth = '250px';
-                    cmdCell.style.overflow = 'hidden';
-                    cmdCell.style.textOverflow = 'ellipsis';
-                    cmdCell.textContent = event.cmd;
-                    cmdCell.title = event.cmd;
-                    // Attack Class
-                    const attackCell = row.insertCell(4);
-                    let attackClass = event.attack_class || 'normal';
-                    attackClass = attackClass.replace('-', ' ');
-                    const attackBadgeClass = event.attack_class === 'exploitation' ? 'exploitation' : 
-                                           event.attack_class === 'brute-force' ? 'brute-force' : 'normal';
-                    attackCell.innerHTML = `<span class="attack-class ${attackBadgeClass}">${attackClass.toUpperCase()}</span>`;
-                    // Severity
-                    const severityCell = row.insertCell(5);
-                    const severityClass = event.severity.toLowerCase();
-                    severityCell.innerHTML = `<span class="severity ${severityClass}">${event.severity.toUpperCase()}</span>`;
-                    
-                    // Limit to 50 rows
-                    if (tbody.rows.length > 50) {
-                        tbody.deleteRow(50);
-                    }
-                    
-                    // Update counter
-                    liveCount.textContent = tbody.rows.length;
-                    
-                    // Flash new row
-                    row.style.background = 'rgba(0, 245, 255, 0.2)';
-                    setTimeout(() => {
-                        row.style.background = '';
-                    }, 3000);
-                } else if (data.alert) {
-                    const alert = document.createElement('div');
-                    alert.className = 'alert';
-                    alert.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${data.alert}`;
-                    document.body.appendChild(alert);
-                    setTimeout(() => alert.remove(), 6000);
-                }
-            } catch(e) {
-                console.error('WebSocket error:', e);
+        class HoneypotDashboard {
+            constructor() {
+                this.ws = null;
+                this.reconnectAttempts = 0;
+                this.maxReconnectAttempts = 10;
+                this.reconnectDelay = 1500;
+                this.init();
             }
-        };
 
-        // Graceful WebSocket handling
-        ws.onclose = () => {
-            console.log('WebSocket disconnected - reconnecting...');
-            setTimeout(() => {
-                location.reload();
-            }, 5000);
-        };
+            init() {
+                this.connectWebSocket();
+            }
 
-        // Update stats every 30s (gentle refresh, preserves WebSocket)
-        setInterval(() => {
-            // Only refresh stats, not full page
-            fetch('/').then(r => r.json()).then(data => {
-                document.querySelector('.stat-value').textContent = data.events;
-                liveCount.textContent = tbody.rows.length;
-            });
-        }, 30000);
+            connectWebSocket() {
+                const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+                const wsUrl = `${protocol}://${window.location.host}/ws`;
+                this.ws = new WebSocket(wsUrl);
+
+                this.ws.onopen = () => {
+                    console.log('WebSocket connected');
+                    this.updateStatus('Connected', 'var(--success)');
+                    this.reconnectAttempts = 0;
+                };
+
+                this.ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.type === 'new_event' && data.event) {
+                            this.addEvent(data.event);
+                        }
+                    } catch (error) {
+                        console.error('WebSocket message error:', error);
+                    }
+                };
+
+                this.ws.onclose = () => {
+                    console.log('WebSocket disconnected');
+                    this.updateStatus('Disconnected', 'var(--danger)');
+
+                    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+                        this.reconnectAttempts += 1;
+                        const delay = this.reconnectDelay * this.reconnectAttempts;
+                        setTimeout(() => this.connectWebSocket(), delay);
+                    }
+                };
+
+                this.ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    this.updateStatus('Error', 'var(--warning)');
+                };
+            }
+
+            formatISTTime(value) {
+                if (!value) return '--';
+
+                const parsed = new Date(value);
+                if (!isNaN(parsed.getTime())) {
+                    return parsed.toLocaleString('en-IN', {
+                        timeZone: 'Asia/Kolkata',
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false
+                    });
+                }
+
+                return value;
+            }
+
+            safeText(value, fallback = '-') {
+                if (value === null || value === undefined || value === '') return fallback;
+                return String(value);
+            }
+
+            titleCase(text) {
+                return String(text)
+                    .replace(/-/g, ' ')
+                    .replace(/\b\w/g, c => c.toUpperCase());
+            }
+
+            addEvent(event) {
+                const tbody = document.getElementById('events-tbody');
+                const row = tbody.insertRow(0);
+                row.classList.add('new-row');
+
+                const eventType = (event.type || event.event_type || 'web').toLowerCase();
+                const sourceIp = event.ip || event.source_ip || '-';
+                const command = event.cmd || event.command || '-';
+                const attackClass = (event.attack_class || 'normal').toLowerCase();
+                const severity = (event.severity || 'low').toLowerCase();
+                const rawTime = event.timestamp || event.time || event.timestamp_formatted || '';
+                const formattedTime = event.timestamp_formatted || this.formatISTTime(rawTime);
+
+                row.insertCell(0).textContent = formattedTime;
+
+                const ipCell = row.insertCell(1);
+                ipCell.innerHTML = `<span class="ip"></span>`;
+                ipCell.querySelector('.ip').textContent = sourceIp;
+
+                const typeCell = row.insertCell(2);
+                const typeBadge = document.createElement('span');
+                typeBadge.className = `type-badge ${eventType === 'ssh' ? 'ssh' : 'web'}`;
+                typeBadge.textContent = eventType.toUpperCase();
+                typeCell.appendChild(typeBadge);
+
+                const cmdCell = row.insertCell(3);
+                cmdCell.className = 'cmd-cell';
+                cmdCell.textContent = command;
+                cmdCell.title = command;
+
+                const attackCell = row.insertCell(4);
+                const attackBadge = document.createElement('span');
+                attackBadge.className = `attack-class ${attackClass}`;
+                attackBadge.textContent = this.titleCase(attackClass);
+                attackCell.appendChild(attackBadge);
+
+                const severityCell = row.insertCell(5);
+                const severityBadge = document.createElement('span');
+                severityBadge.className = `severity ${severity}`;
+                severityBadge.textContent = severity.toUpperCase();
+                severityCell.appendChild(severityBadge);
+
+                if (tbody.rows.length > 50) {
+                    tbody.deleteRow(50);
+                }
+
+                const totalEl = document.getElementById('stat-total');
+                const sshEl = document.getElementById('stat-ssh');
+                const webEl = document.getElementById('stat-web');
+                const liveCountEl = document.getElementById('live-count');
+                const totalEventsEl = document.getElementById('total-events');
+
+                const total = parseInt(totalEl.textContent || '0', 10) + 1;
+                totalEl.textContent = total;
+                liveCountEl.textContent = tbody.rows.length;
+                totalEventsEl.innerHTML = `<i class="fas fa-bolt"></i> ${total} Events`;
+
+                if (eventType === 'ssh') {
+                    sshEl.textContent = parseInt(sshEl.textContent || '0', 10) + 1;
+                } else if (eventType === 'web') {
+                    webEl.textContent = parseInt(webEl.textContent || '0', 10) + 1;
+                }
+
+                setTimeout(() => row.classList.remove('new-row'), 2000);
+            }
+
+            updateStatus(status, color) {
+                const statusEl = document.getElementById('ws-status');
+                const indicator = document.getElementById('ws-indicator');
+
+                statusEl.innerHTML = `<i class="fas fa-wifi"></i> ${status}`;
+                statusEl.style.color = color;
+                indicator.innerHTML = `<i class="fas fa-circle" style="color: ${color};"></i> ${status}`;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new HoneypotDashboard();
+        });
     </script>
 </body>
 </html>
