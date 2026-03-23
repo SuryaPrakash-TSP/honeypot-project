@@ -1,0 +1,12 @@
+# Large ML models (versioned in releases)
+*.pkl
+*.keras
+*.h5
+scripts/honeypot_session_rf_v8.pkl
+scripts/session_scaler.pkl
+
+# Temp/processed
+data/events.db
+scripts/ml/phase8/
+__pycache__/
+*.log
