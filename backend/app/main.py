@@ -1,24 +1,34 @@
-from fastapi import FastAPI, Request, Form, Depends, WebSocket, WebSocketDisconnect, HTTPException
+from __future__ import annotations
+
+from fastapi import FastAPI, Request, Depends, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
-from sqlalchemy import create_engine, text, Column, Integer, String, DateTime
+from pydantic import BaseModel, Field
+from sqlalchemy import (
+    create_engine,
+    Column,
+    Integer,
+    String,
+    DateTime,
+    Float,
+    Boolean,
+    inspect,
+    text,
+    func,
+)
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
-from datetime import datetime, timedelta
 from contextlib import asynccontextmanager
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
-import asyncio
+from typing import Dict, List, Any, Optional
+from collections import defaultdict, deque
 import json
-import os
 import pickle
 import threading
 import time
 import webbrowser
-import hashlib
-from collections import defaultdict, deque
+
 import joblib
 import numpy as np
 import pandas as pd
@@ -31,38 +41,66 @@ from tensorflow import keras
 Base = declarative_base()
 IST = pytz.timezone("Asia/Kolkata")
 
-connected_clients: List[WebSocket] = []
-app_state: dict = {}
-session_commands: Dict[str, List[str]] = {}
+app_state: Dict[str, Any] = {}
+session_commands: Dict[str, List[str]] = defaultdict(list)
+bad_actors: Dict[str, Dict[str, Any]] = {}
 
-# PHASE 10: Adaptive Response Engine
-rate_limiters: Dict[str, deque] = {}  # IP -> timestamps
-bad_actors: Dict[str, dict] = {}      # IP -> escalation data
 decoys_dir = Path("app/decoys")
-decoys_dir.mkdir(exist_ok=True)
+decoys_dir.mkdir(parents=True, exist_ok=True)
 
-# Prevent NameError if LSTM assets are absent
 lstm_model = None
 lstm_tokenizer = None
 lstm_label_encoder = None
+
+DATABASE_URL = "sqlite:///data/events.db"
+Path("data").mkdir(parents=True, exist_ok=True)
+
+engine = create_engine(
+    DATABASE_URL,
+    echo=False,
+    future=True,
+    connect_args={"check_same_thread": False},
+)
+SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+
 
 # =========================
 # Database Model
 # =========================
 class Event(Base):
     __tablename__ = "events"
+
     id = Column(Integer, primary_key=True, autoincrement=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    session_id = Column(String, default="unknown")
     source_ip = Column(String, nullable=False)
     username = Column(String, default="unknown")
-    event_type = Column(String, nullable=False)
-    command = Column(String)
-    attack_class = Column(String, default="normal")
-    severity = Column(String, default="LOW")
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    event_type = Column(String, default="ssh")
 
-DATABASE_URL = "sqlite:///data/events.db"
-engine = create_engine(DATABASE_URL, echo=False, future=True)
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+    command = Column(String, default="")
+    attack_class = Column(String, default="normal")
+
+    severity = Column(String, default="LOW")
+    threat_score = Column(Float, default=0.0)
+
+    lstm_session = Column(String, default="Unknown")
+    lstm_score = Column(Float, default=0.0)
+    command_score = Column(Float, default=0.0)
+
+    ciciot_attack = Column(String, default=None)
+    ciciot_confidence = Column(Float, default=0.0)
+    ciciot_score = Column(Float, default=0.0)
+
+    decision_source = Column(String, default="rules")
+    fusion_method = Column(String, default="hybrid_lstm_ciciot_command")
+
+    base_severity = Column(String, default="LOW")
+    floor_severity = Column(String, default="LOW")
+    policy_escalated = Column(Boolean, default=False)
+
+    action_taken = Column(String, default="logged")
+
 
 def get_db():
     db = SessionLocal()
@@ -71,124 +109,700 @@ def get_db():
     finally:
         db.close()
 
+
 def ensure_event_columns():
-    from sqlalchemy import inspect
-    insp = inspect(engine)
-    if insp.has_table("events"):
-        columns = insp.get_columns("events")
-        col_names = [col["name"] for col in columns]
-        with engine.begin() as conn:
-            if "attack_class" not in col_names:
-                conn.execute(text("ALTER TABLE events ADD COLUMN attack_class TEXT DEFAULT 'normal'"))
-            if "severity" not in col_names:
-                conn.execute(text("ALTER TABLE events ADD COLUMN severity TEXT DEFAULT 'LOW'"))
+    inspector = inspect(engine)
+    if not inspector.has_table("events"):
+        return
+
+    columns = {col["name"] for col in inspector.get_columns("events")}
+
+    alter_statements = {
+        "session_id": "ALTER TABLE events ADD COLUMN session_id VARCHAR DEFAULT 'unknown'",
+        "lstm_session": "ALTER TABLE events ADD COLUMN lstm_session VARCHAR DEFAULT 'Unknown'",
+        "lstm_score": "ALTER TABLE events ADD COLUMN lstm_score FLOAT DEFAULT 0.0",
+        "command_score": "ALTER TABLE events ADD COLUMN command_score FLOAT DEFAULT 0.0",
+        "ciciot_score": "ALTER TABLE events ADD COLUMN ciciot_score FLOAT DEFAULT 0.0",
+        "fusion_method": "ALTER TABLE events ADD COLUMN fusion_method VARCHAR DEFAULT 'hybrid_lstm_ciciot_command'",
+        "base_severity": "ALTER TABLE events ADD COLUMN base_severity VARCHAR DEFAULT 'LOW'",
+        "floor_severity": "ALTER TABLE events ADD COLUMN floor_severity VARCHAR DEFAULT 'LOW'",
+        "policy_escalated": "ALTER TABLE events ADD COLUMN policy_escalated BOOLEAN DEFAULT 0",
+        "action_taken": "ALTER TABLE events ADD COLUMN action_taken VARCHAR DEFAULT 'logged'",
+    }
+
+    with engine.begin() as conn:
+        for col_name, stmt in alter_statements.items():
+            if col_name not in columns:
+                conn.execute(text(stmt))
+
 
 # =========================
-# PHASE 10: Rate Limiter & Escalation
+# Pydantic Models
+# =========================
+class CICIoTRequest(BaseModel):
+    features: Dict[str, Any]
+
+
+class LSTMPredictRequest(BaseModel):
+    session_id: str = "default"
+    command: str
+
+
+class HybridPredictRequest(BaseModel):
+    session_id: str = "default"
+    command: str
+    event_type: str = "ssh"
+    ciciot_features: Optional[Dict[str, Any]] = None
+
+
+class SSHIngestRequest(BaseModel):
+    ip: str = Field(..., description="Source IP address")
+    username: str = "unknown"
+    command: str
+    session_id: str = "ssh"
+    event_type: str = "ssh"
+    ciciot_features: Optional[Dict[str, Any]] = None
+
+
+class WebIngestRequest(BaseModel):
+    ip: str = Field(..., description="Source IP address")
+    session_id: str = "web"
+    event_type: str = "web"
+    activity: str = Field(..., description="HTTP or network activity summary")
+    username: str = "web-anon"
+    ciciot_features: Optional[Dict[str, Any]] = None
+
+
+# =========================
+# Helpers
+# =========================
+def now_utc() -> datetime:
+    return datetime.utcnow()
+
+
+def format_time(ts: Optional[datetime]) -> str:
+    if not ts:
+        return "-"
+    if ts.tzinfo is None:
+        ts = pytz.utc.localize(ts)
+    return ts.astimezone(IST).strftime("%H:%M:%S")
+
+
+def load_json_if_exists(path: Path) -> dict:
+    if not path.exists():
+        return {}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def clamp01(value: float) -> float:
+    return max(0.0, min(1.0, float(value)))
+
+
+def severity_rank(severity: str) -> int:
+    mapping = {"LOW": 1, "MEDIUM": 2, "HIGH": 3}
+    return mapping.get((severity or "LOW").upper(), 1)
+
+
+def normalize_severity(severity: str) -> str:
+    sev = (severity or "LOW").upper()
+    return sev if sev in {"LOW", "MEDIUM", "HIGH"} else "LOW"
+
+
+def normalize_event_type(event_type: Optional[str], default: str = "ssh") -> str:
+    value = (event_type or default).strip().lower()
+    if value in {"ssh", "web"}:
+        return value
+    return default
+
+
+def severity_from_score(score: float) -> str:
+    if score >= 0.75:
+        return "HIGH"
+    if score >= 0.40:
+        return "MEDIUM"
+    return "LOW"
+
+
+def max_severity(a: str, b: str) -> str:
+    return a if severity_rank(a) >= severity_rank(b) else b
+
+
+def build_model_session_id(event_type: str, session_id: str) -> str:
+    normalized_type = normalize_event_type(event_type, default="ssh")
+    raw_session = (session_id or normalized_type).strip()
+    return f"{normalized_type}:{raw_session}"
+
+
+def normalize_attack_label(raw_label: Optional[str]) -> Optional[str]:
+    if not raw_label:
+        return None
+
+    label = str(raw_label).strip().lower()
+    if not label:
+        return None
+
+    benign_terms = {"benign", "normal", "harmless", "none", "unknown"}
+    if label in benign_terms:
+        return "normal"
+
+    ddos_terms = [
+        "ddos", "dos", "syn flood", "synflood", "udp flood",
+        "icmp flood", "ack flood", "http flood", "flood"
+    ]
+    if any(term in label for term in ddos_terms):
+        return "ddos"
+
+    recon_terms = [
+        "scan", "recon", "reconnaissance", "portscan",
+        "port scan", "host discovery", "service discovery", "enumeration"
+    ]
+    if any(term in label for term in recon_terms):
+        return "reconnaissance"
+
+    brute_terms = ["bruteforce", "brute force", "dictionary", "credential"]
+    if any(term in label for term in brute_terms):
+        return "credential_attack"
+
+    exploit_terms = ["exploit", "malware", "backdoor", "rce", "injection", "shell", "payload"]
+    if any(term in label for term in exploit_terms):
+        return "exploitation"
+
+    bot_terms = ["bot", "botnet", "c2", "command and control"]
+    if any(term in label for term in bot_terms):
+        return "botnet_activity"
+
+    if "web" in label:
+        return "web_attack"
+
+    return label.replace(" ", "_")
+
+
+def classify_ssh_attack(command: str, lstm_session: Optional[str] = None) -> str:
+    cmd = (command or "").lower()
+    lstm_label = (lstm_session or "").lower()
+
+    if not cmd.strip():
+        return "normal"
+
+    recon_tokens = [
+        "nmap", "masscan", "nikto", "enum4linux", "sqlmap",
+        "scan", "recon", "netstat", "ss ", "ifconfig", "ip a",
+        "whois", "dig ", "nslookup"
+    ]
+    credential_tokens = [
+        "hydra", "medusa", "patator", "john", "hashcat",
+        "cat /etc/shadow", "/etc/passwd"
+    ]
+    privilege_tokens = [
+        "sudo", "su ", "passwd", "useradd", "usermod", "chsh",
+        "systemctl", "service ", "crontab"
+    ]
+    exploit_tokens = [
+        "wget ", "curl ", "chmod +x", "./", "| bash", "| sh",
+        "bash -i", "/bin/bash -i", "python -c", "perl -e",
+        "nc -e", "nohup", "reverse shell", "payload", "command injection"
+    ]
+    destructive_tokens = [
+        "rm -rf", "mkfs", "dd if=", "truncate", "shred"
+    ]
+
+    if any(token in cmd for token in destructive_tokens):
+        return "destructive_activity"
+    if any(token in cmd for token in exploit_tokens):
+        return "exploitation"
+    if any(token in cmd for token in credential_tokens):
+        return "credential_attack"
+    if any(token in cmd for token in privilege_tokens):
+        return "privilege_abuse"
+    if any(token in cmd for token in recon_tokens):
+        return "reconnaissance"
+
+    if any(term in lstm_label for term in ["malware", "exploit", "shell", "payload", "backdoor"]):
+        return "exploitation"
+    if any(term in lstm_label for term in ["bruteforce", "credential"]):
+        return "credential_attack"
+    if any(term in lstm_label for term in ["scan", "recon", "enumeration"]):
+        return "reconnaissance"
+
+    return "normal"
+
+
+def classify_web_attack(activity: str) -> str:
+    text = (activity or "").lower()
+
+    if not text.strip():
+        return "normal"
+
+    ddos_tokens = [
+        "http flood", "udp flood", "syn flood", "ack flood",
+        "icmp flood", "slowloris", "rate limit exceeded",
+        "too many requests", "traffic spike", "flood"
+    ]
+    credential_tokens = [
+        "post /login", "post /signin", "post /auth", "post /session",
+        "wp-login", "xmlrpc.php", "bruteforce", "brute force",
+        "credential stuffing", "invalid password", "failed login"
+    ]
+    recon_tokens = [
+        "get /admin", "get /administrator", "get /.env", "get /.git",
+        "get /phpmyadmin", "get /wp-admin", "get /manager/html",
+        "head /", "options /", "trace /", "nikto", "scan attempt",
+        "dirb", "gobuster", "ffuf", "enumeration", "probe"
+    ]
+    injection_tokens = [
+        "union select", "' or 1=1", "\" or 1=1", "sql injection",
+        "<script", "xss", "../", "..\\", "/etc/passwd", "lfi", "rfi",
+        "cmd=", "exec=", "powershell", "shellshock", "jndi:", "${jndi"
+    ]
+    upload_exec_tokens = [
+        "file upload", "webshell", ".php", ".jsp", ".aspx",
+        "cmd.php", "shell.php", "malicious payload"
+    ]
+
+    if any(token in text for token in ddos_tokens):
+        return "ddos"
+    if any(token in text for token in upload_exec_tokens):
+        return "exploitation"
+    if any(token in text for token in injection_tokens):
+        return "web_attack"
+    if any(token in text for token in credential_tokens):
+        return "credential_attack"
+    if any(token in text for token in recon_tokens):
+        return "reconnaissance"
+
+    if text.startswith("get /"):
+        return "reconnaissance"
+    if text.startswith("post /login") or text.startswith("post /signin"):
+        return "credential_attack"
+
+    return "normal"
+
+
+def resolve_attack_class(
+    *,
+    event_type: str,
+    raw_text: str,
+    lstm_session: Optional[str],
+    ciciot_attack: Optional[str],
+    ciciot_score: float,
+    command_score: float,
+    threat_score: float,
+) -> str:
+    normalized_type = normalize_event_type(event_type)
+    normalized_ciciot = normalize_attack_label(ciciot_attack)
+
+    if normalized_type == "ssh":
+        ssh_label = classify_ssh_attack(raw_text, lstm_session=lstm_session)
+        if ssh_label != "normal":
+            return ssh_label
+
+        if normalized_ciciot in {"credential_attack", "exploitation", "reconnaissance", "botnet_activity"}:
+            return normalized_ciciot
+
+        if normalized_ciciot == "ddos":
+            if ciciot_score >= 0.92 and threat_score >= 0.80:
+                return "ddos"
+
+        return "normal"
+
+    web_label = classify_web_attack(raw_text)
+    if web_label != "normal":
+        return web_label
+
+    if normalized_ciciot == "ddos":
+        ddos_hints = [
+            "flood", "traffic spike", "packet storm", "syn", "udp", "icmp",
+            "too many requests", "rate limit", "volumetric"
+        ]
+        raw_lower = (raw_text or "").lower()
+        if any(h in raw_lower for h in ddos_hints) or ciciot_score >= 0.90:
+            return "ddos"
+        return "web_attack" if threat_score >= 0.50 else "normal"
+
+    if normalized_ciciot in {"reconnaissance", "credential_attack", "web_attack", "exploitation", "botnet_activity"}:
+        return normalized_ciciot
+
+    if command_score >= 0.65 or threat_score >= 0.60:
+        return "web_attack"
+
+    return "normal"
+
+
+def score_command_risk(command: str) -> float:
+    cmd = (command or "").strip().lower()
+    if not cmd:
+        return 0.0
+
+    exact_benign = {
+        "ls", "pwd", "whoami", "id", "date", "uname", "hostname",
+        "echo", "clear", "history"
+    }
+    if cmd in exact_benign:
+        return 0.05
+
+    if any(cmd == item or cmd.startswith(item + " ") for item in ["cat", "head", "tail", "cd", "find", "ps", "top", "df", "du"]):
+        return 0.15
+
+    score = 0.20
+
+    medium_tokens = [
+        "netstat", "ss", "ifconfig", "ip a", "ping", "scp", "ftp", "telnet",
+        "ssh ", "curl ", "wget ", "nc ", "netcat", "nmap", "masscan",
+        "hydra", "sqlmap", "nikto", "enum4linux", "scan", "recon",
+        "post /login", "get /admin", "wp-login", "bruteforce"
+    ]
+    suspicious_tokens = [
+        "http://", "https://", "/tmp/", "base64", "bash -c", "sh -c",
+        "sudo", "nohup", "systemctl", "crontab", "useradd",
+        "../", "union select", " or 1=1", "<script", "payload", "suspicious"
+    ]
+    critical_tokens = [
+        "chmod +x", "./", "bash -i", "/bin/bash -i", "python -c", "perl -e",
+        "rm -rf", "mkfs", "dd if=", "cat /etc/shadow", "nc -e",
+        "reverse shell", "command injection"
+    ]
+
+    for token in medium_tokens:
+        if token in cmd:
+            score += 0.18
+
+    for token in suspicious_tokens:
+        if token in cmd:
+            score += 0.12
+
+    for token in critical_tokens:
+        if token in cmd:
+            score += 0.28
+
+    has_download = any(token in cmd for token in ["wget ", "curl ", "http://", "https://"])
+    has_permission_change = "chmod +x" in cmd
+    has_direct_exec = any(token in cmd for token in ["./", "bash ", "sh ", "python -c", "perl -e", "nohup"])
+    has_pipe_exec = ("| bash" in cmd) or ("| sh" in cmd)
+    has_reverse_shell = any(token in cmd for token in ["nc -e", "/bin/bash -i", "bash -i", "python -c", "perl -e", "reverse shell"])
+    has_destructive = any(token in cmd for token in ["rm -rf", "mkfs", "dd if="])
+    has_credential_access = any(token in cmd for token in ["cat /etc/shadow", "/etc/passwd"])
+
+    if has_download and has_permission_change and has_direct_exec:
+        return 0.96
+    if has_pipe_exec:
+        return 0.97
+    if has_reverse_shell:
+        return 0.98
+    if has_destructive:
+        return 0.99
+    if has_credential_access:
+        return 0.95
+
+    if has_download and has_direct_exec:
+        score += 0.22
+    if "&&" in cmd:
+        score += 0.06
+    if ";" in cmd:
+        score += 0.04
+
+    return round(clamp01(score), 4)
+
+
+def floor_severity_from_command(command: str, event_type: str = "ssh") -> str:
+    cmd = (command or "").strip().lower()
+    normalized_type = normalize_event_type(event_type)
+
+    if not cmd:
+        return "LOW"
+
+    if normalized_type == "web":
+        forced_high_patterns = [
+            "sql injection" in cmd,
+            "command injection" in cmd,
+            "shellshock" in cmd,
+            "${jndi" in cmd,
+            "jndi:" in cmd,
+            "<script" in cmd and "admin" in cmd,
+            "webshell" in cmd,
+            "shell.php" in cmd,
+            "cmd.php" in cmd,
+            "../" in cmd and "/etc/passwd" in cmd,
+        ]
+        if any(forced_high_patterns):
+            return "HIGH"
+
+        forced_medium_patterns = [
+            "get /admin" in cmd,
+            "get /phpmyadmin" in cmd,
+            "get /wp-admin" in cmd,
+            "post /login" in cmd,
+            "wp-login" in cmd,
+            "scan attempt" in cmd,
+            "nikto" in cmd,
+            "gobuster" in cmd,
+            "ffuf" in cmd,
+            "union select" in cmd,
+            "<script" in cmd,
+            "../" in cmd,
+        ]
+        if any(forced_medium_patterns):
+            return "MEDIUM"
+
+        score = score_command_risk(command)
+        if score >= 0.85:
+            return "HIGH"
+        if score >= 0.55:
+            return "MEDIUM"
+        return "LOW"
+
+    forced_high_patterns = [
+        ("wget " in cmd or "curl " in cmd or "http://" in cmd or "https://" in cmd)
+        and "chmod +x" in cmd
+        and "./" in cmd,
+
+        "| bash" in cmd,
+        "| sh" in cmd,
+
+        "nc -e" in cmd,
+        "/bin/bash -i" in cmd,
+        "bash -i" in cmd,
+        "python -c" in cmd,
+        "perl -e" in cmd,
+
+        "rm -rf" in cmd,
+        "mkfs" in cmd,
+        "dd if=" in cmd,
+        "cat /etc/shadow" in cmd,
+        "reverse shell" in cmd,
+        "command injection" in cmd,
+    ]
+
+    if any(forced_high_patterns):
+        return "HIGH"
+
+    forced_medium_patterns = [
+        "nmap" in cmd,
+        "masscan" in cmd,
+        "hydra" in cmd,
+        "sqlmap" in cmd,
+        "nikto" in cmd,
+        "enum4linux" in cmd,
+        "wget " in cmd,
+        "curl " in cmd,
+        "sudo" in cmd,
+        "crontab" in cmd,
+        "systemctl" in cmd,
+        "scan" in cmd,
+        "recon" in cmd,
+        "wp-login" in cmd,
+        "../" in cmd,
+        "union select" in cmd,
+        "<script" in cmd,
+    ]
+
+    if any(forced_medium_patterns):
+        return "MEDIUM"
+
+    score = score_command_risk(command)
+    if score >= 0.85:
+        return "HIGH"
+    if score >= 0.55:
+        return "MEDIUM"
+    return "LOW"
+
+
+def create_decoy_files():
+    decoys = {
+        "aws_keys.txt": "AWS_ACCESS_KEY_ID=AKIAxxxxxxxxxxxx\nAWS_SECRET_ACCESS_KEY=xxxxxxxxxxxxxxxxxxxxxxxx",
+        "db_backup.sql": "-- fake backup\nCREATE TABLE users(id INT, username TEXT, password TEXT);",
+        "payroll_2026.xlsx": "This is a decoy spreadsheet placeholder.",
+        "prod_server_passwords.txt": "root: hunter2\nadmin: password123",
+    }
+    for name, content in decoys.items():
+        fp = decoys_dir / name
+        if not fp.exists():
+            fp.write_text(content, encoding="utf-8")
+
+
+# =========================
+# Rate Limiting / Actor Escalation
 # =========================
 class RateLimiter:
-    def __init__(self, window: int = 60, max_requests: int = 5):
-        self.window = window
+    def __init__(self, max_requests: int = 12, window_seconds: int = 60):
         self.max_requests = max_requests
+        self.window_seconds = window_seconds
         self.requests: Dict[str, deque] = defaultdict(deque)
 
-    async def is_allowed(self, ip: str) -> bool:
+    def check(self, ip: str) -> Dict[str, Any]:
         now = time.time()
-        window_requests = self.requests[ip]
-        
-        # Remove old requests
-        while window_requests and now - window_requests[0] > self.window:
-            window_requests.popleft()
-        
-        if len(window_requests) >= self.max_requests:
-            return False
-        
-        window_requests.append(now)
-        return True
+        q = self.requests[ip]
 
-    def get_stats(self, ip: str) -> dict:
-        now = time.time()
-        window_requests = self.requests[ip]
-        recent = sum(1 for t in window_requests if now - t <= 60)
-        return {"count_1m": recent, "blocked": len(window_requests) >= self.max_requests}
+        while q and (now - q[0] > self.window_seconds):
+            q.popleft()
 
-rate_limiter = RateLimiter()
+        q.append(now)
 
-def escalate_bad_actor(ip: str, event_data: dict):
-    """Track persistent bad actors for deeper traps"""
-    if ip not in bad_actors:
-        bad_actors[ip] = {"events": 0, "high_severity": 0, "first_seen": time.time()}
-    
-    bad_actors[ip]["events"] += 1
-    if event_data["severity"] == "HIGH":
-        bad_actors[ip]["high_severity"] += 1
-    
-    # Escalate after 3+ high severity or 10+ events
-    score = bad_actors[ip]["high_severity"] + (bad_actors[ip]["events"] // 3)
-    return score >= 3
+        blocked = len(q) > self.max_requests
+        return {
+            "count": len(q),
+            "window_seconds": self.window_seconds,
+            "blocked": blocked,
+        }
+
+
+rate_limiter = RateLimiter(max_requests=12, window_seconds=60)
+
+
+def update_bad_actor_state(ip: str, event_payload: Dict[str, Any]) -> Dict[str, Any]:
+    state = bad_actors.setdefault(
+        ip,
+        {
+            "high_alerts": 0,
+            "medium_alerts": 0,
+            "malicious_events": 0,
+            "latest_severity": "LOW",
+            "last_attack": "normal",
+            "max_threat_score": 0.0,
+            "enforcement": "monitor",
+            "last_seen": None,
+        },
+    )
+
+    severity = normalize_severity(event_payload.get("severity"))
+    threat_score = float(event_payload.get("threat_score", 0.0))
+    attack_class = event_payload.get("attack_class", "normal")
+
+    if severity == "HIGH":
+        state["high_alerts"] += 1
+
+    if severity in {"MEDIUM", "HIGH"}:
+        state["medium_alerts"] += 1
+
+    if attack_class != "normal" or severity in {"MEDIUM", "HIGH"} or threat_score >= 0.40:
+        state["malicious_events"] += 1
+
+    state["latest_severity"] = severity
+    state["last_attack"] = attack_class
+    state["max_threat_score"] = max(float(state.get("max_threat_score", 0.0)), threat_score)
+    state["last_seen"] = now_utc().isoformat()
+
+    high_alerts = int(state["high_alerts"])
+    medium_alerts = int(state["medium_alerts"])
+    malicious_events = int(state["malicious_events"])
+    max_threat = float(state["max_threat_score"])
+
+    if (
+        high_alerts >= 2
+        or medium_alerts >= 5
+        or malicious_events >= 5
+        or threat_score >= 0.92
+        or max_threat >= 0.95
+    ):
+        state["enforcement"] = "escalated"
+    elif (
+        high_alerts >= 1
+        or medium_alerts >= 3
+        or malicious_events >= 3
+        or threat_score >= 0.75
+        or max_threat >= 0.80
+    ):
+        state["enforcement"] = "watch"
+    else:
+        state["enforcement"] = "monitor"
+
+    return state
+
+
+def rebuild_bad_actor_state_from_db(db: Session) -> None:
+    global bad_actors
+    bad_actors.clear()
+
+    events = (
+        db.query(Event)
+        .order_by(Event.timestamp.asc(), Event.id.asc())
+        .all()
+    )
+
+    for event in events:
+        source_ip = (event.source_ip or "").strip()
+        if not source_ip:
+            continue
+
+        update_bad_actor_state(
+            source_ip,
+            {
+                "severity": event.severity or "LOW",
+                "threat_score": float(event.threat_score or 0.0),
+                "attack_class": event.attack_class or "normal",
+            },
+        )
+
 
 # =========================
-# Time Helpers
-# =========================
-def get_ist_now():
-    return datetime.utcnow().replace(tzinfo=pytz.utc).astimezone(IST)
-
-def format_time(ts):
-    if isinstance(ts, str):
-        try:
-            raw = ts.rstrip("Z")
-            dt = datetime.fromisoformat(raw)
-            if dt.tzinfo is None:
-                dt = pytz.utc.localize(dt)
-            dt = dt.astimezone(IST)
-            return dt.strftime("%H:%M:%S")
-        except Exception:
-            return ts[-8:] if len(ts) >= 8 else "00:00:00"
-    if hasattr(ts, "strftime"):
-        dt = ts
-        if dt.tzinfo is None:
-            dt = pytz.utc.localize(dt)
-        dt = dt.astimezone(IST)
-        return dt.strftime("%H:%M:%S")
-    return get_ist_now().strftime("%H:%M:%S")
-
-# =========================
-# Lifespan
+# App Lifespan / Model Loading
 # =========================
 @asynccontextmanager
 async def lifespan(app_: FastAPI):
     Base.metadata.create_all(bind=engine)
     ensure_event_columns()
+    create_decoy_files()
 
-    # Load RF model
-    rf_model_path = Path("app/honeypot_rf_v2.pkl")
-    rf_metadata_path = Path("app/model_metadata.json")
-    if rf_model_path.exists() and rf_metadata_path.exists():
+    with SessionLocal() as db:
+        rebuild_bad_actor_state_from_db(db)
+        print(f"Rebuilt bad actor state from DB: {len(bad_actors)} tracked actors")
+
+    app_state["rf_model"] = None
+    app_state["rf_features"] = []
+    app_state["rf_info"] = {
+        "status": "disabled",
+        "reason": "Legacy RF removed from live runtime due to invalid or mismatched artifact",
+        "type": "legacy_honeypot_rf",
+    }
+
+    app_state["ciciot_model"] = None
+    app_state["ciciot_features"] = []
+    app_state["ciciot_info"] = {}
+
+    ciciot_model_path = Path("app/ciciot_rf_model.pkl")
+    ciciot_features_path = Path("app/ciciot_feature_columns.pkl")
+
+    if ciciot_model_path.exists() and ciciot_features_path.exists():
         try:
-            rf_model = joblib.load(rf_model_path)
-            with open(rf_metadata_path, "r", encoding="utf-8") as f:
-                rf_metadata = json.load(f)
-            app_state["rf_model"] = rf_model
-            app_state["rf_features"] = rf_metadata.get("features", ["ip_freq", "cmd_len", "sudo_flag", "wget_curl"])
-            app_state["rf_info"] = {
-                "version": rf_metadata.get("version", "RF v7.1"),
-                "accuracy": float(rf_metadata.get("accuracy", 0.96)),
-                "trained_samples": rf_metadata.get("trained_samples", 50000),
-                "features": app_state["rf_features"],
-                "model_size_kb": rf_metadata.get("model_size_kb", 48),
-            }
-            print(f"Loaded RF: {app_state['rf_info']['version']} | {app_state['rf_info']['accuracy']:.1%}")
-        except Exception as e:
-            app_state["rf_info"] = {}
-            print(f"RF load failed: {e}")
-    else:
-        app_state["rf_info"] = {}
+            ciciot_model = joblib.load(ciciot_model_path)
+            ciciot_features = joblib.load(ciciot_features_path)
 
-    # Load LSTM model
+            app_state["ciciot_model"] = ciciot_model
+            app_state["ciciot_features"] = list(ciciot_features)
+            app_state["ciciot_info"] = {
+                "version": "CICIoT2023 RF v1",
+                "features_count": len(app_state["ciciot_features"]),
+                "classes": list(getattr(ciciot_model, "classes_", [])),
+                "status": "loaded",
+                "type": "ciciot2023_multiclass_rf",
+            }
+            print("Loaded CICIoT2023 RF model")
+        except Exception as e:
+            app_state["ciciot_info"] = {
+                "status": f"failed: {e}",
+                "type": "ciciot2023_multiclass_rf",
+            }
+            print(f"CICIoT load failed: {e}")
+    else:
+        app_state["ciciot_info"] = {
+            "status": "missing artifacts",
+            "type": "ciciot2023_multiclass_rf",
+        }
+
     global lstm_model, lstm_tokenizer, lstm_label_encoder
+    lstm_model = None
+    lstm_tokenizer = None
+    lstm_label_encoder = None
+    app_state["lstm_info"] = {}
+
     lstm_model_path = Path("app/lstm_ssh_v8.keras")
     lstm_tokenizer_path = Path("app/lstm_tokenizer.pkl")
     lstm_encoder_path = Path("app/lstm_label_encoder.pkl")
+    lstm_metadata_path = Path("app/lstm_metadata.json")
+
     if all(p.exists() for p in [lstm_model_path, lstm_tokenizer_path, lstm_encoder_path]):
         try:
             lstm_model = keras.models.load_model(str(lstm_model_path))
@@ -196,32 +810,43 @@ async def lifespan(app_: FastAPI):
                 lstm_tokenizer = pickle.load(f)
             with open(lstm_encoder_path, "rb") as f:
                 lstm_label_encoder = pickle.load(f)
+
+            lstm_meta = load_json_if_exists(lstm_metadata_path)
             app_state["lstm_info"] = {
-                "version": "LSTM v8.1",
-                "accuracy": 0.979,
-                "trained_samples": 233000,
-                "classes": 9,
-                "max_sequence_length": getattr(lstm_tokenizer, "max_length", 100),
+                "version": lstm_meta.get("version", "LSTM v8.1"),
+                "accuracy": float(lstm_meta.get("accuracy", 0.979)),
+                "trained_samples": int(lstm_meta.get("trained_samples", 233000)),
+                "classes": int(lstm_meta.get("classes", 9)),
+                "max_sequence_length": int(lstm_meta.get("max_sequence_length", 100)),
+                "status": "loaded",
+                "type": "ssh_sequence_lstm",
             }
-            print(f"Loaded LSTM: {app_state['lstm_info']['accuracy']:.1%}")
+            print(f"Loaded LSTM: {app_state['lstm_info']['version']}")
         except Exception as e:
             lstm_model = None
             lstm_tokenizer = None
             lstm_label_encoder = None
-            app_state["lstm_info"] = {}
+            app_state["lstm_info"] = {
+                "status": f"failed: {e}",
+                "type": "ssh_sequence_lstm",
+            }
             print(f"LSTM load failed: {e}")
     else:
-        app_state["lstm_info"] = {}
+        app_state["lstm_info"] = {
+            "status": "missing artifacts",
+            "type": "ssh_sequence_lstm",
+        }
 
-    app_state["hybrid_info"] = "Phase 10: Adaptive Response Active"
-    print("PHASE 10 COMPLETE - Adaptive Response Engine LIVE")
-    
+    app_state["hybrid_info"] = "LSTM + CICIoT + Command-Risk Hybrid Decision Engine Active"
+    print("Honeypot backend ready")
+
     yield
 
+
 # =========================
-# App Initialization - FIXED ORDER
+# App Initialization
 # =========================
-app = FastAPI(title="Honeypot SOC - Phase 10", lifespan=lifespan)
+app = FastAPI(title="Honeypot SOC", lifespan=lifespan)
 templates = Jinja2Templates(directory="app/templates")
 
 app.add_middleware(
@@ -232,11 +857,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# PHASE 10: Decoy Files Mount
 app.mount("/decoys", StaticFiles(directory="app/decoys"), name="decoys")
 
+
 # =========================
-# PHASE 10: WebSocket Manager (MOVED AFTER APP CREATION)
+# WebSocket Manager
 # =========================
 class ConnectionManager:
     def __init__(self):
@@ -247,23 +872,23 @@ class ConnectionManager:
         self.active_connections.append(websocket)
 
     def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
 
-    async def send_personal_alert(self, message: str, websocket: WebSocket):
-        await websocket.send_text(message)
-
-    async def broadcast_alert(self, alert_data: dict):
-        disconnected = []
-        for connection in self.active_connections[:]:
+    async def broadcast_json(self, payload: Dict[str, Any]):
+        dead = []
+        for ws in self.active_connections[:]:
             try:
-                await connection.send_text(json.dumps(alert_data))
+                await ws.send_text(json.dumps(payload, default=str))
             except Exception:
-                disconnected.append(connection)
-        
-        for connection in disconnected:
-            self.active_connections.remove(connection)
+                dead.append(ws)
+
+        for ws in dead:
+            self.disconnect(ws)
+
 
 manager = ConnectionManager()
+
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -273,341 +898,534 @@ async def websocket_endpoint(websocket: WebSocket):
             await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+    except Exception:
+        manager.disconnect(websocket)
+
 
 # =========================
-# ML Helpers (Enhanced)
+# ML Prediction Helpers
 # =========================
-def get_ip_freq(db: Session, ip: str) -> float:
-    result = db.execute(text("SELECT COUNT(*) FROM events WHERE source_ip = :ip"), {"ip": ip}).scalar()
-    return float(result or 1.0)
+def predict_ciciot_from_dict(feature_dict: Dict[str, Any]) -> Dict[str, Any]:
+    model = app_state.get("ciciot_model")
+    feature_columns = app_state.get("ciciot_features", [])
 
-def compute_ml_features(db: Session, ip: str, cmd: str, sudo_flag: int = 0) -> list:
-    ip_freq = get_ip_freq(db, ip)
-    cmd_len = float(len(cmd or ""))
-    sudo_flag = float(sudo_flag)
-    wget_curl = 1.0 if any(p in (cmd or "").lower() for p in ["wget", "curl"]) else 0.0
-    rf_features = app_state.get("rf_features", ["ip_freq", "cmd_len", "sudo_flag", "wget_curl"])
-    return [ip_freq, cmd_len, sudo_flag, wget_curl][:len(rf_features)]
+    if model is None or not feature_columns:
+        raise HTTPException(status_code=503, detail="CICIoT model not loaded")
 
-def predict_rf(features: list) -> tuple[str, float]:
-    rf_model = app_state.get("rf_model")
-    if not rf_model:
-        return "normal", 0.0
-    rf_features = app_state.get("rf_features", ["ip_freq", "cmd_len", "sudo_flag", "wget_curl"])
-    data_df = pd.DataFrame([features], columns=rf_features)
-    pred_class = rf_model.predict(data_df)[0]
-    proba = rf_model.predict_proba(data_df)[0]
-    confidence = float(np.max(proba))
-    attack_types = {0: "normal", 1: "brute-force", 2: "exploitation"}
-    return attack_types.get(int(pred_class), "unknown"), confidence
+    row = {}
+    for col in feature_columns:
+        raw = feature_dict.get(col, 0.0)
+        try:
+            row[col] = float(raw)
+        except Exception:
+            row[col] = 0.0
 
-def predict_lstm_session_commands(commands: list[str]) -> str:
-    global lstm_model, lstm_tokenizer, lstm_label_encoder
-    if not all([lstm_model, lstm_tokenizer, lstm_label_encoder]):
-        return "lstm_unavailable"
-    sequences = lstm_tokenizer.texts_to_sequences(commands)
-    if not sequences:
-        return "no_commands"
-    from tensorflow.keras.preprocessing.sequence import pad_sequences
-    max_length = app_state.get("lstm_info", {}).get("max_sequence_length", 100)
-    padded = pad_sequences(sequences, maxlen=max_length, padding="post", truncating="post")
-    prediction = lstm_model.predict(padded, verbose=0)
-    predicted_class_idx = int(np.argmax(prediction[0]))
-    return str(lstm_label_encoder.inverse_transform([predicted_class_idx])[0])
+    data_df = pd.DataFrame([row], columns=feature_columns)
+    pred = model.predict(data_df)[0]
 
-def predict_hybrid(rf_class: str, rf_conf: float, lstm_threat: str, session_length: int) -> dict:
-    weights = {"rf": 0.4, "lstm": 0.6}
-    threat_score = (
-        rf_conf * weights["rf"] * (1 if rf_class != "normal" else 0)
-        + (weights["lstm"] * (1 if any(t in lstm_threat for t in ["Tactic", "Technique"]) else 0))
-    )
-    final_threat = "HIGH" if threat_score > 0.5 else "MEDIUM" if threat_score > 0.3 else "LOW"
+    confidence = 0.0
+    if hasattr(model, "predict_proba"):
+        try:
+            probs = model.predict_proba(data_df)[0]
+            confidence = float(np.max(probs))
+        except Exception:
+            confidence = 0.0
+
+    attack = str(pred)
+    attack_lower = attack.lower()
+
+    if attack_lower in {"benign", "normal"}:
+        score = 0.0
+    elif any(token in attack_lower for token in ["dos", "ddos"]):
+        score = max(confidence, 0.75)
+    elif any(token in attack_lower for token in ["scan", "recon", "bruteforce"]):
+        score = max(confidence * 0.9, 0.60)
+    else:
+        score = max(confidence * 0.85, 0.45)
+
     return {
-        "rf_event": rf_class,
-        "rf_confidence": rf_conf,
-        "lstm_session": lstm_threat,
-        "session_length": session_length,
-        "hybrid_threat": final_threat,
-        "threat_score": round(threat_score, 3),
-        "fusion_method": "weighted_rf_lstm",
+        "ciciot_attack": attack,
+        "ciciot_confidence": round(float(confidence), 4),
+        "ciciot_score": round(clamp01(score), 4),
     }
 
-def compute_severity(cmd: str, attack_class: str) -> str:
-    cmd_l = (cmd or "").lower()
-    high_patterns = ["wget", "nc", "rm -rf", "curl", "sudo"]
-    if any(p in cmd_l for p in high_patterns) or attack_class == "exploitation":
-        return "HIGH"
-    if attack_class == "brute-force":
-        return "MEDIUM"
-    return "LOW"
+
+def map_lstm_label_to_score(label: str, prob: float) -> float:
+    label_lower = (label or "").lower()
+
+    benign_terms = ["benign", "normal", "harmless"]
+    medium_terms = ["scan", "recon", "suspicious", "enumeration"]
+    high_terms = ["malware", "payload", "exploit", "shell", "bruteforce", "backdoor", "attack"]
+
+    if any(term in label_lower for term in benign_terms):
+        return 0.05 * max(prob, 0.5)
+    if any(term in label_lower for term in medium_terms):
+        return 0.45 + 0.30 * prob
+    if any(term in label_lower for term in high_terms):
+        return 0.70 + 0.25 * prob
+
+    return 0.25 + 0.30 * prob
+
+
+def predict_lstm_from_session(session_id: str, command: str) -> Dict[str, Any]:
+    session_commands[session_id].append(command)
+    sequence = session_commands[session_id][-100:]
+
+    if lstm_model is None or lstm_tokenizer is None or lstm_label_encoder is None:
+        return {
+            "lstm_session": "Unavailable",
+            "session_length": len(sequence),
+            "lstm_score": round(score_command_risk(command) * 0.5, 4),
+            "lstm_confidence": 0.0,
+        }
+
+    joined = " ; ".join(sequence)
+    try:
+        seq = lstm_tokenizer.texts_to_sequences([joined])
+        max_len = int(app_state.get("lstm_info", {}).get("max_sequence_length", 100))
+        padded = keras.preprocessing.sequence.pad_sequences(seq, maxlen=max_len, padding="post")
+        preds = lstm_model.predict(padded, verbose=0)[0]
+
+        pred_idx = int(np.argmax(preds))
+        pred_label = str(lstm_label_encoder.inverse_transform([pred_idx])[0])
+        pred_prob = float(preds[pred_idx])
+
+        lstm_score = clamp01(map_lstm_label_to_score(pred_label, pred_prob))
+        return {
+            "lstm_session": pred_label,
+            "session_length": len(sequence),
+            "lstm_score": round(float(lstm_score), 4),
+            "lstm_confidence": round(pred_prob, 4),
+        }
+    except Exception:
+        return {
+            "lstm_session": "Fallback",
+            "session_length": len(sequence),
+            "lstm_score": round(score_command_risk(command) * 0.5, 4),
+            "lstm_confidence": 0.0,
+        }
+
+
+def fuse_hybrid_decision(
+    command: str,
+    session_id: str,
+    event_type: str = "ssh",
+    ciciot_features: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    normalized_type = normalize_event_type(event_type)
+    lstm_result = predict_lstm_from_session(session_id=session_id, command=command)
+    command_score = round(score_command_risk(command), 4)
+    floor_severity = floor_severity_from_command(command, event_type=normalized_type)
+
+    ciciot_result = {
+        "ciciot_attack": None,
+        "ciciot_confidence": 0.0,
+        "ciciot_score": 0.0,
+    }
+    if ciciot_features:
+        try:
+            ciciot_result = predict_ciciot_from_dict(ciciot_features)
+        except HTTPException:
+            pass
+        except Exception:
+            pass
+
+    lstm_score = float(lstm_result["lstm_score"])
+    ciciot_score = float(ciciot_result["ciciot_score"])
+
+    if normalized_type == "web":
+        if ciciot_features:
+            threat_score = 0.45 * command_score + 0.20 * lstm_score + 0.35 * ciciot_score
+        else:
+            threat_score = 0.70 * command_score + 0.30 * lstm_score
+    else:
+        if ciciot_features:
+            threat_score = 0.40 * command_score + 0.30 * lstm_score + 0.30 * ciciot_score
+        else:
+            threat_score = 0.55 * command_score + 0.45 * lstm_score
+
+    threat_score = round(clamp01(threat_score), 4)
+
+    base_severity = severity_from_score(threat_score)
+    final_severity = max_severity(base_severity, floor_severity)
+    policy_escalated = final_severity != base_severity
+
+    attack_class = resolve_attack_class(
+        event_type=normalized_type,
+        raw_text=command,
+        lstm_session=lstm_result.get("lstm_session"),
+        ciciot_attack=ciciot_result.get("ciciot_attack"),
+        ciciot_score=ciciot_score,
+        command_score=command_score,
+        threat_score=threat_score,
+    )
+
+    if ciciot_features and ciciot_score >= max(command_score, lstm_score):
+        decision_source = "hybrid"
+    elif lstm_score >= command_score:
+        decision_source = "lstm"
+    else:
+        decision_source = "command"
+
+    return {
+        "severity": final_severity,
+        "threat_score": threat_score,
+        "attack_class": attack_class,
+        "decision_source": decision_source,
+        "fusion_method": "hybrid_lstm_ciciot_command",
+        "base_severity": base_severity,
+        "floor_severity": floor_severity,
+        "policy_escalated": policy_escalated,
+        "command_score": command_score,
+        **lstm_result,
+        **ciciot_result,
+    }
+
+
+def apply_enforcement(ip: str, severity: str, rl_result: Dict[str, Any], actor_state: Dict[str, Any]) -> str:
+    severity = normalize_severity(severity)
+    enforcement = actor_state.get("enforcement", "monitor")
+
+    if rl_result["blocked"]:
+        return "rate-limited"
+    if enforcement == "escalated":
+        return "escalated"
+    if enforcement == "watch":
+        return "watchlisted"
+    if severity == "HIGH":
+        return "alerted"
+    return "logged"
+
+
+def serialize_event(event: Event) -> Dict[str, Any]:
+    return {
+        "timestamp": event.timestamp.isoformat() if event.timestamp else None,
+        "timestamp_formatted": format_time(event.timestamp),
+        "session_id": event.session_id,
+        "source_ip": event.source_ip,
+        "username": event.username,
+        "event_type": normalize_event_type(event.event_type),
+        "command": event.command or "",
+        "attack_class": event.attack_class or "normal",
+        "severity": normalize_severity(event.severity),
+        "threat_score": round(float(event.threat_score or 0.0), 4),
+        "lstm_session": event.lstm_session or "Unknown",
+        "lstm_score": round(float(event.lstm_score or 0.0), 4),
+        "command_score": round(float(event.command_score or 0.0), 4),
+        "ciciot_attack": event.ciciot_attack,
+        "ciciot_confidence": round(float(event.ciciot_confidence or 0.0), 4),
+        "ciciot_score": round(float(event.ciciot_score or 0.0), 4),
+        "decision_source": event.decision_source or "rules",
+        "fusion_method": event.fusion_method or "hybrid_lstm_ciciot_command",
+        "base_severity": normalize_severity(event.base_severity or "LOW"),
+        "floor_severity": normalize_severity(event.floor_severity or "LOW"),
+        "policy_escalated": bool(event.policy_escalated),
+        "action_taken": event.action_taken or "logged",
+    }
+
+
+async def broadcast_runtime_event(event_payload: Dict[str, Any]):
+    await manager.broadcast_json(
+        {
+            "type": "new_event",
+            "event": event_payload,
+        }
+    )
+
+    if normalize_severity(event_payload.get("severity")) == "HIGH":
+        await manager.broadcast_json(
+            {
+                "type": "alert",
+                "severity": event_payload.get("severity"),
+                "event": event_payload,
+                **event_payload,
+            }
+        )
+
+
+async def ingest_event_common(
+    *,
+    db: Session,
+    ip: str,
+    username: str,
+    raw_text: str,
+    session_id: str,
+    event_type: str,
+    ciciot_features: Optional[Dict[str, Any]],
+):
+    normalized_type = normalize_event_type(event_type, default="ssh" if event_type != "web" else "web")
+    model_session_id = build_model_session_id(normalized_type, session_id)
+
+    hybrid = fuse_hybrid_decision(
+        command=raw_text,
+        session_id=model_session_id,
+        event_type=normalized_type,
+        ciciot_features=ciciot_features,
+    )
+
+    rl_result = rate_limiter.check(ip)
+    if rl_result["blocked"]:
+        hybrid["severity"] = max_severity(hybrid["severity"], "HIGH")
+        hybrid["policy_escalated"] = True
+        hybrid["base_severity"] = hybrid.get("base_severity", hybrid["severity"])
+        hybrid["floor_severity"] = max_severity(hybrid.get("floor_severity", "LOW"), "HIGH")
+        hybrid["decision_source"] = "policy"
+
+    actor_preview = update_bad_actor_state(
+        ip,
+        {
+            "severity": hybrid["severity"],
+            "threat_score": hybrid["threat_score"],
+            "attack_class": hybrid["attack_class"],
+        },
+    )
+
+    action_taken = apply_enforcement(
+        ip=ip,
+        severity=hybrid["severity"],
+        rl_result=rl_result,
+        actor_state=actor_preview,
+    )
+
+    event = Event(
+        timestamp=now_utc(),
+        session_id=session_id,
+        source_ip=ip,
+        username=username,
+        event_type=normalized_type,
+        command=raw_text,
+        attack_class=hybrid["attack_class"],
+        severity=normalize_severity(hybrid["severity"]),
+        threat_score=float(hybrid["threat_score"]),
+        lstm_session=hybrid["lstm_session"],
+        lstm_score=float(hybrid["lstm_score"]),
+        command_score=float(hybrid["command_score"]),
+        ciciot_attack=hybrid["ciciot_attack"],
+        ciciot_confidence=float(hybrid["ciciot_confidence"]),
+        ciciot_score=float(hybrid["ciciot_score"]),
+        decision_source=hybrid["decision_source"],
+        fusion_method=hybrid["fusion_method"],
+        base_severity=normalize_severity(hybrid["base_severity"]),
+        floor_severity=normalize_severity(hybrid["floor_severity"]),
+        policy_escalated=bool(hybrid["policy_escalated"]),
+        action_taken=action_taken,
+    )
+
+    db.add(event)
+    db.commit()
+    db.refresh(event)
+
+    event_payload = serialize_event(event)
+    event_payload["rate_limit_blocked"] = rl_result["blocked"]
+    event_payload["rate_limit_count"] = rl_result["count"]
+    event_payload["bad_actor_enforcement"] = actor_preview["enforcement"]
+
+    await broadcast_runtime_event(event_payload)
+
+    return {
+        "status": "ok",
+        "event": event_payload,
+        "rate_limit": rl_result,
+        "bad_actor": actor_preview,
+    }
+
 
 # =========================
-# PHASE 10: Routes
+# Routes
 # =========================
 @app.get("/")
-async def root():
-    db = SessionLocal()
-    try:
-        count = db.query(Event).count()
-    finally:
-        db.close()
-    rf_info = app_state.get("rf_info", {})
-    lstm_info = app_state.get("lstm_info", {})
+def root():
     return {
-        "status": "Phase 10 LIVE - Adaptive Response Engine",
-        "events": count,
-        "phase": "10",
-        "models": {
-            "rf": f"{rf_info.get('version', 'N/A')} | {rf_info.get('accuracy', 0):.1%}" if rf_info else "Disabled",
-            "lstm": f"{lstm_info.get('version', 'N/A')} | {lstm_info.get('accuracy', 0):.1%}" if lstm_info else "Disabled",
-        },
-        "features": {
-            "live_alerts": "WebSocket Active",
-            "brute_force": "Rate Limiting Live", 
-            "escalation": "Bad Actor Tracking",
-            "decoys": "/decoys/ Mounted"
-        }
+        "message": "Honeypot SOC is running",
+        "dashboard": "/dashboard",
+        "stats": "/stats",
+        "model_info": "/model-info",
+        "ingest_routes": ["/ingest_ssh", "/ingest_web", "/ingest_network"],
     }
+
 
 @app.get("/model-info")
-async def model_info():
-    rf_info = app_state.get("rf_info", {})
-    lstm_info = app_state.get("lstm_info", {})
+def model_info():
     return {
-        "rf_model": rf_info,
-        "lstm_model": lstm_info,
-        "status": "Phase 10: Adaptive Response Active",
-        "phase": "10",
-        "rate_limiter_stats": dict(rate_limiter.requests),
-        "bad_actors_count": len(bad_actors)
+        "hybrid_info": app_state.get("hybrid_info", ""),
+        "rf_info": app_state.get("rf_info", {}),
+        "lstm_info": app_state.get("lstm_info", {}),
+        "ciciot_info": app_state.get("ciciot_info", {}),
     }
 
-@app.get("/decoys")
-async def list_decoys():
-    """List available decoy files for escalated actors"""
-    files = [f.name for f in decoys_dir.glob("*") if f.is_file()]
-    return {"decoys": files, "path": "/decoys/"}
 
-# Create sample decoy files
-def create_decoy_files():
-    decoys = {
-        "id_rsa": "-----BEGIN RSA PRIVATE KEY-----\nMIIEogIBAAKCAQEA... (fake key)",
-        "malware.exe": "GIF89a... (harmless GIF disguised)",
-        "rootkit.sh": "#!/bin/bash\necho 'Fake rootkit'\nexit 0",
+@app.get("/stats")
+def stats(db: Session = Depends(get_db)):
+    normalized_event_type = func.lower(func.trim(Event.event_type))
+    normalized_severity = func.upper(func.trim(Event.severity))
+
+    total_events = db.query(Event).count()
+    ssh_count = db.query(Event).filter(normalized_event_type == "ssh").count()
+    web_count = db.query(Event).filter(normalized_event_type == "web").count()
+    high_count = db.query(Event).filter(normalized_severity == "HIGH").count()
+    medium_count = db.query(Event).filter(normalized_severity == "MEDIUM").count()
+    low_count = db.query(Event).filter(normalized_severity == "LOW").count()
+    ciciot_attack_count = (
+        db.query(Event)
+        .filter(Event.ciciot_attack.isnot(None))
+        .filter(func.lower(func.trim(Event.ciciot_attack)).notin_(["normal", "benign"]))
+        .count()
+    )
+    escalated_count = db.query(Event).filter(Event.policy_escalated == True).count()  # noqa: E712
+
+    return {
+        "total_events": total_events,
+        "ssh_count": ssh_count,
+        "web_count": web_count,
+        "high_count": high_count,
+        "medium_count": medium_count,
+        "low_count": low_count,
+        "ciciot_attack_count": ciciot_attack_count,
+        "policy_escalations": escalated_count,
+        "bad_actors_count": len(bad_actors),
+        "rate_limiter_ips": len(rate_limiter.requests),
+        "bad_actors": bad_actors,
     }
-    for name, content in decoys.items():
-        path = decoys_dir / name
-        if not path.exists():
-            path.write_text(content[:500])  # truncated safe content
+
+
+@app.post("/predict_ciciot")
+def predict_ciciot_route(payload: CICIoTRequest):
+    return predict_ciciot_from_dict(payload.features)
+
+
+@app.post("/predict_lstm")
+def predict_lstm_route(payload: LSTMPredictRequest):
+    return predict_lstm_from_session(payload.session_id, payload.command)
+
+
+@app.post("/predict_hybrid")
+def predict_hybrid_route(payload: HybridPredictRequest):
+    return fuse_hybrid_decision(
+        command=payload.command,
+        session_id=payload.session_id,
+        event_type=payload.event_type,
+        ciciot_features=payload.ciciot_features,
+    )
+
 
 @app.post("/ingest_ssh")
-async def ingest_ssh(
-    ip: str = Form(...),
-    username: str = Form("unknown"),
-    command: str = Form(...),
-    session_id: str = Form("ssh"),
-):
-    # PHASE 10: Rate limiting check
-    if not await rate_limiter.is_allowed(ip):
-        alert_data = {
-            "type": "alert",
-            "severity": "HIGH",
-            "title": "BRUTE FORCE BLOCKED",
-            "message": f"IP {ip} exceeded rate limit (5+/min)",
-            "action": "BLOCKED",
-            "timestamp": get_ist_now().isoformat()
-        }
-        asyncio.create_task(manager.broadcast_alert(alert_data))
-        raise HTTPException(status_code=429, detail="Rate limited")
+async def ingest_ssh(payload: SSHIngestRequest, db: Session = Depends(get_db)):
+    return await ingest_event_common(
+        db=db,
+        ip=payload.ip,
+        username=payload.username,
+        raw_text=payload.command,
+        session_id=payload.session_id,
+        event_type="ssh",
+        ciciot_features=payload.ciciot_features,
+    )
 
-    db = SessionLocal()
-    try:
-        sudo_flag = 1 if "sudo" in (command or "").lower() else 0
-        features = compute_ml_features(db, ip, command, sudo_flag)
-        rf_class, rf_conf = predict_rf(features)
-        severity = compute_severity(command, rf_class)
 
-        if session_id not in session_commands:
-            session_commands[session_id] = []
-        session_commands[session_id].append(command)
-        if len(session_commands[session_id]) > 50:
-            session_commands[session_id] = session_commands[session_id][-50:]
+@app.post("/ingest_web")
+async def ingest_web(payload: WebIngestRequest, db: Session = Depends(get_db)):
+    return await ingest_event_common(
+        db=db,
+        ip=payload.ip,
+        username=payload.username,
+        raw_text=payload.activity,
+        session_id=payload.session_id,
+        event_type="web",
+        ciciot_features=payload.ciciot_features,
+    )
 
-        event = Event(
-            source_ip=ip,
-            username=username,
-            event_type="ssh",
-            command=command,
-            attack_class=rf_class,
-            severity=severity,
-            timestamp=datetime.utcnow(),
-        )
-        db.add(event)
-        db.commit()
 
-    finally:
-        db.close()
+@app.post("/ingest_network")
+async def ingest_network(payload: WebIngestRequest, db: Session = Depends(get_db)):
+    return await ingest_event_common(
+        db=db,
+        ip=payload.ip,
+        username=payload.username,
+        raw_text=payload.activity,
+        session_id=payload.session_id,
+        event_type="web",
+        ciciot_features=payload.ciciot_features,
+    )
 
-    # PHASE 10: Live Alerts + Escalation
-    now_ist = get_ist_now()
-    event_data = {
-        "type": "new_event",
-        "event": {
-            "ip": ip,
-            "source_ip": ip,
-            "type": "ssh",
-            "event_type": "ssh",
-            "time": now_ist.isoformat(),
-            "timestamp_formatted": format_time(now_ist),
-            "cmd": (command or "")[:50],
-            "command": command or "",
-            "severity": severity.lower(),
-            "attack_class": rf_class,
-            "rf_confidence": round(rf_conf, 3),
-        },
-    }
-    
-    # High severity → RED popup alert
-    if severity == "HIGH":
-        alert_data = {
-            "type": "alert",
-            "severity": "HIGH",
-            "title": "HIGH SEVERITY THREAT",
-            "message": f"Command: {command[:100]}",
-            "ip": ip,
-            "action": "ESCALATING" if escalate_bad_actor(ip, {"severity": severity}) else "MONITOR",
-            "timestamp": now_ist.isoformat(),
-            "sound": "alert"
-        }
-        asyncio.create_task(manager.broadcast_alert(alert_data))
-    
-    asyncio.create_task(manager.broadcast_alert(event_data))
-    return {
-        "status": "logged",
-        "severity": severity,
-        "rf_class": rf_class,
-        "confidence": rf_conf,
-        "rate_limited": False,
-        "escalated": ip in bad_actors
-    }
 
-# Keep existing endpoints unchanged for compatibility
-@app.post("/predict_lstm", response_model=dict)
-async def predict_lstm_endpoint(request: dict):
-    commands = request.get("commands", [])
-    if not commands:
-        raise HTTPException(status_code=400, detail="Commands list required")
-    threat = predict_lstm_session_commands(commands)
-    return {"threat": threat, "model": "LSTM v8.1", "input_length": len(commands), "status": "predicted"}
+@app.get("/dashboard")
+def dashboard(request: Request, db: Session = Depends(get_db)):
+    normalized_event_type = func.lower(func.trim(Event.event_type))
+    normalized_severity = func.upper(func.trim(Event.severity))
 
-@app.post("/predict_hybrid", response_model=dict)
-async def predict_hybrid_endpoint(request: dict):
-    session_id = request.get("session_id", "default")
-    current_command = request.get("command", "")
-    db = SessionLocal()
-    try:
-        sudo_flag = 1 if "sudo" in (current_command or "").lower() else 0
-        features = compute_ml_features(db, "0.0.0.0", current_command, sudo_flag)
-        rf_class, rf_conf = predict_rf(features)
-    finally:
-        db.close()
-    session_cmds = session_commands.get(session_id, []).copy()
-    if current_command:
-        session_cmds.append(current_command)
-    lstm_threat = predict_lstm_session_commands(session_cmds[-20:])
-    hybrid_result = predict_hybrid(rf_class, rf_conf, lstm_threat, len(session_cmds))
-    return {**hybrid_result, "session_id": session_id, "model": "Hybrid RF v7.1 + LSTM v8.1"}
-
-@app.get("/events")
-async def events_api(db: Session = Depends(get_db)):
-    events = db.query(Event).order_by(Event.timestamp.desc()).limit(20).all()
-    return [{
-        "ip": e.source_ip,
-        "type": e.event_type,
-        "time": format_time(e.timestamp),
-        "cmd": (getattr(e, "command", "N/A") or "N/A")[:50],
-        "severity": getattr(e, "severity", "LOW"),
-        "attack_class": getattr(e, "attack_class", "normal"),
-    } for e in events]
-
-@app.get("/dashboard", response_class=HTMLResponse)
-async def dashboard_view(request: Request, db: Session = Depends(get_db)):
+    events = db.query(Event).order_by(Event.id.desc()).limit(50).all()
     total = db.query(Event).count()
-    web = db.query(Event).filter(Event.event_type == "web").count()
-    ssh = db.query(Event).filter(Event.event_type == "ssh").count()
-    events = db.query(Event).order_by(Event.timestamp.desc()).limit(50).all()
-    events_data = [{
-        "timestamp_formatted": format_time(e.timestamp),
-        "source_ip": e.source_ip,
-        "event_type": e.event_type,
-        "command": getattr(e, "command", "") or "",
-        "severity": getattr(e, "severity", "LOW"),
-        "attack_class": getattr(e, "attack_class", "normal"),
-    } for e in events]
-    
-    rf_info = app_state.get("rf_info", {})
-    lstm_info = app_state.get("lstm_info", {})
-    hybrid_info = app_state.get("hybrid_info", "Phase 10: Adaptive Response Active")
-    
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request,
-        "events": events_data,
-        "total_events": total,
-        "web_count": web,
-        "ssh_count": ssh,
-        "rf_info": rf_info,
-        "lstm_info": lstm_info,
-        "hybrid_info": hybrid_info,
-        "phase": "Phase 10 Complete - Adaptive Response LIVE",
-    })
+    ssh = db.query(Event).filter(normalized_event_type == "ssh").count()
+    web = db.query(Event).filter(normalized_event_type == "web").count()
+    high = db.query(Event).filter(normalized_severity == "HIGH").count()
+    policy_escalations = db.query(Event).filter(Event.policy_escalated == True).count()  # noqa: E712
 
-class PredictRequest(BaseModel):
-    ip_freq: float
-    cmd_len: float
-    sudo_flag: int
-    wget_curl: float
+    ciciot_hits = (
+        db.query(Event)
+        .filter(Event.ciciot_attack.isnot(None))
+        .filter(func.lower(func.trim(Event.ciciot_attack)).notin_(["normal", "benign"]))
+        .count()
+    )
 
-@app.post("/predict", response_model=dict)
-async def predict_endpoint(req: PredictRequest):
-    features = [req.ip_freq, req.cmd_len, float(req.sudo_flag), req.wget_curl]
-    rf_class, confidence = predict_rf(features)
-    attack_types = {0: "normal", 1: "brute-force", 2: "exploitation"}
-    pred_class_id = next((k for k, v in attack_types.items() if v == rf_class), 0)
-    return {
-        "attack_type": rf_class,
-        "confidence": confidence,
-        "class_id": pred_class_id,
-        "model": "RF v7.1",
-    }
+    events_data = [serialize_event(e) for e in events]
+    live_count = len(events_data)
+    visible_high = sum(1 for e in events_data if (e.get("severity") or "").upper() == "HIGH")
 
-# Keep legacy broadcast for compatibility
-async def broadcast_event(event_data: dict):
-    await manager.broadcast_alert(event_data)
+    avg_threat = 0.0
+    if events_data:
+        avg_threat = sum(float(e.get("threat_score", 0) or 0) for e in events_data) / len(events_data)
+
+    return templates.TemplateResponse(
+        "dashboard.html",
+        {
+            "request": request,
+            "events": events_data,
+            "total_events": total,
+            "ssh_count": ssh,
+            "web_count": web,
+            "high_count": high,
+            "avg_threat": round(avg_threat, 3),
+            "bad_actors_count": len(bad_actors),
+            "policy_escalations": policy_escalations,
+            "ciciot_attack_count": ciciot_hits,
+            "live_count": live_count,
+            "visible_high": visible_high,
+            "lstm_info": app_state.get("lstm_info", {}),
+            "ciciot_info": app_state.get("ciciot_info", {}),
+        },
+    )
+
 
 # =========================
 # Browser Auto-Open
 # =========================
 def open_browser():
-    time.sleep(8)
+    time.sleep(4)
     url = "http://localhost:8000/dashboard"
     try:
         webbrowser.open_new(url)
-        print(f"Dashboard: {url} (Phase 10 LIVE)")
+        print(f"Dashboard opened: {url}")
     except Exception as e:
         print(f"Could not auto-open browser: {e}")
         print(f"Open manually: {url}")
+
 
 # =========================
 # Main Runner
 # =========================
 if __name__ == "__main__":
-    create_decoy_files()  # PHASE 10: Create decoy files
-    browser_thread = threading.Thread(target=open_browser, daemon=True)
-    browser_thread.start()
-    
+    create_decoy_files()
+
     import uvicorn
+
+    def start():
+        time.sleep(2)
+        browser_thread = threading.Thread(target=open_browser, daemon=True)
+        browser_thread.start()
+
+    threading.Thread(target=start, daemon=True).start()
+
     uvicorn.run(
-        "app.main:app",
+        app,
         host="0.0.0.0",
         port=8000,
         reload=False,

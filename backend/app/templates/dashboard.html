@@ -1,665 +1,1972 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Honeypot SOC • Phase 10</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Honeypot Security Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <style>
         :root {
-            --bg-primary: #0a0a0f;
-            --bg-secondary: #111127;
-            --bg-card: rgba(20, 20, 40, 0.8);
-            --accent-cyber: #00f5ff;
-            --accent-purple: #7c3aed;
-            --accent-gold: #fbbf24;
-            --danger: #ef4444;
-            --success: #10b981;
+            --bg: #071019;
+            --bg-2: #0b1623;
+            --bg-3: #0f1d2d;
+            --panel: rgba(10, 18, 29, 0.96);
+            --panel-2: rgba(15, 27, 42, 0.98);
+            --panel-soft: rgba(255, 255, 255, 0.03);
+            --panel-soft-2: rgba(255, 255, 255, 0.05);
+            --border: rgba(83, 118, 153, 0.24);
+            --border-strong: rgba(110, 146, 184, 0.38);
+            --text: #e8f1fb;
+            --muted: #8ea3bb;
+            --muted-2: #c6d3e1;
+            --accent: #24c4ff;
+            --accent-2: #7c5cff;
+            --accent-soft: rgba(36, 196, 255, 0.12);
+            --success: #22c55e;
+            --success-soft: rgba(34, 197, 94, 0.14);
             --warning: #f59e0b;
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --border: rgba(75, 85, 99, 0.2);
-            --shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            --warning-soft: rgba(245, 158, 11, 0.14);
+            --danger: #ef4444;
+            --danger-soft: rgba(239, 68, 68, 0.14);
+            --purple-soft: rgba(124, 92, 255, 0.14);
+            --shadow: 0 20px 50px rgba(0, 0, 0, 0.34);
+            --radius: 20px;
+            --radius-sm: 14px;
+            --shell-max: 1600px;
+            --shell-pad: 20px;
+            --table-max-h: 70vh;
+        }
+
+        body.theme-light {
+            --bg: #edf4fb;
+            --bg-2: #e5eef8;
+            --bg-3: #dbe8f5;
+            --panel: rgba(255, 255, 255, 0.97);
+            --panel-2: rgba(248, 251, 255, 0.98);
+            --panel-soft: rgba(15, 23, 42, 0.03);
+            --panel-soft-2: rgba(15, 23, 42, 0.05);
+            --border: rgba(15, 23, 42, 0.10);
+            --border-strong: rgba(15, 23, 42, 0.18);
+            --text: #0f172a;
+            --muted: #64748b;
+            --muted-2: #334155;
+            --accent: #0284c7;
+            --accent-2: #7c3aed;
+            --accent-soft: rgba(2, 132, 199, 0.10);
+            --success-soft: rgba(34, 197, 94, 0.10);
+            --warning-soft: rgba(245, 158, 11, 0.12);
+            --danger-soft: rgba(239, 68, 68, 0.10);
+            --purple-soft: rgba(124, 58, 237, 0.10);
+            --shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+        }
+
+        body.compact {
+            --shell-pad: 12px;
+            --radius: 16px;
+            --radius-sm: 12px;
         }
 
         * {
-            margin: 0;
-            padding: 0;
             box-sizing: border-box;
         }
 
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
-            color: var(--text-primary);
+            margin: 0;
             min-height: 100vh;
+            color: var(--text);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(36, 196, 255, 0.08), transparent 22%),
+                radial-gradient(circle at top right, rgba(124, 92, 255, 0.08), transparent 20%),
+                linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 48%, var(--bg-3) 100%);
         }
 
-        .container {
-            max-width: 2000px;
+        body.theme-light {
+            background:
+                radial-gradient(circle at top left, rgba(2, 132, 199, 0.08), transparent 24%),
+                radial-gradient(circle at top right, rgba(124, 58, 237, 0.08), transparent 24%),
+                linear-gradient(180deg, #f7fbff 0%, #edf4fb 50%, #e3edf7 100%);
+        }
+
+        .shell {
+            max-width: var(--shell-max);
             margin: 0 auto;
-            padding: 2rem;
+            padding: var(--shell-pad);
         }
 
-        /* PHASE 10: ALERT OVERLAY */
-        .alert-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.9);
-            display: none;
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
             align-items: center;
-            justify-content: center;
-            z-index: 10000;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+
+        .toolbar-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .toolbar-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            border: 1px solid var(--border);
+            background: var(--panel-soft);
+            color: var(--text);
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            background: var(--panel-soft-2);
+            border-color: var(--border-strong);
+        }
+
+        .btn-accent {
+            background: linear-gradient(180deg, rgba(36, 196, 255, 0.18), rgba(36, 196, 255, 0.08));
+            border-color: rgba(36, 196, 255, 0.24);
+        }
+
+        .panel {
+            background: linear-gradient(180deg, var(--panel), rgba(255,255,255,0.01));
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            min-width: 0;
+            overflow: hidden;
             backdrop-filter: blur(10px);
         }
 
-        .alert-modal {
-            background: linear-gradient(135deg, #1f2937, #111827);
-            border: 2px solid var(--danger);
-            border-radius: 20px;
-            padding: 3rem;
-            max-width: 600px;
-            width: 90%;
+        .hero-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.8fr);
+            gap: 16px;
+            margin-bottom: 16px;
+            align-items: stretch;
+        }
+
+        .hero-panel {
+            padding: 24px;
+            position: relative;
+        }
+
+        .hero-panel::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background:
+                linear-gradient(120deg, rgba(36, 196, 255, 0.05), transparent 42%, rgba(124, 92, 255, 0.05));
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 12px;
+            border-radius: 999px;
+            background: var(--accent-soft);
+            color: var(--accent);
+            border: 1px solid rgba(36, 196, 255, 0.22);
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 18px;
+            margin-top: 16px;
+            position: relative;
+            z-index: 1;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: clamp(26px, 3vw, 34px);
+            line-height: 1.05;
+            letter-spacing: -0.03em;
+        }
+
+        .hero-sub {
+            margin-top: 10px;
+            color: var(--muted-2);
+            font-size: 13px;
+            line-height: 1.65;
+            max-width: 860px;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .hero-mini-stats {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .mini-chip {
+            border: 1px solid var(--border);
+            background: var(--panel-soft);
+            border-radius: 16px;
+            padding: 16px;
+            min-width: 0;
+        }
+
+        .mini-chip .label {
+            font-size: 11px;
+            color: var(--muted);
+            margin-bottom: 8px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .mini-chip .value {
+            font-size: clamp(18px, 2vw, 24px);
+            font-weight: 900;
+            line-height: 1.1;
+            word-break: break-word;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .status-panel {
+            padding: 18px;
+            display: grid;
+            gap: 12px;
+            align-content: start;
+        }
+
+        .status-card {
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 18px;
+            background: linear-gradient(180deg, rgba(36, 196, 255, 0.10), rgba(255,255,255,0.02));
+        }
+
+        .status-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .status-title {
+            font-size: 12px;
+            font-weight: 900;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .live-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: 0.04em;
+        }
+
+        .status-connected {
+            color: #86efac;
+            background: rgba(34, 197, 94, 0.14);
+            border: 1px solid rgba(34, 197, 94, 0.20);
+        }
+
+        .status-disconnected {
+            color: #fca5a5;
+            background: rgba(239, 68, 68, 0.14);
+            border: 1px solid rgba(239, 68, 68, 0.20);
+        }
+
+        .status-value {
+            font-size: clamp(30px, 5vw, 40px);
+            font-weight: 900;
+            line-height: 1;
+            margin-bottom: 6px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .status-sub {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .quick-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .quick-stat {
+            border: 1px solid var(--border);
+            background: var(--panel-soft);
+            border-radius: 14px;
+            padding: 14px;
+            min-width: 0;
+        }
+
+        .quick-label {
+            font-size: 11px;
+            color: var(--muted);
+            margin-bottom: 6px;
+            font-weight: 700;
+        }
+
+        .quick-value {
+            font-size: clamp(18px, 2.1vw, 24px);
+            font-weight: 900;
+            line-height: 1.15;
+            margin-bottom: 4px;
+            word-break: break-word;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .quick-note {
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .kpi {
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg, var(--panel), rgba(255,255,255,0.01));
+            border-radius: 18px;
+            padding: 16px;
+            min-height: 118px;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .kpi-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .kpi-icon {
+            width: 42px;
+            height: 42px;
+            display: grid;
+            place-items: center;
+            border-radius: 12px;
+            background: var(--panel-soft);
+            font-size: 15px;
+            flex: 0 0 auto;
+        }
+
+        .kpi-value {
+            margin-top: 12px;
+            font-size: clamp(24px, 3vw, 30px);
+            font-weight: 900;
+            line-height: 1;
+            word-break: break-word;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .kpi-label {
+            margin-top: 8px;
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--muted-2);
+            line-height: 1.35;
+        }
+
+        .stream-section {
+            margin-bottom: 16px;
+        }
+
+        .lower-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+            gap: 16px;
+            align-items: start;
+        }
+
+        .section-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 18px 18px 14px;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 900;
+        }
+
+        .section-sub {
+            margin-top: 4px;
+            font-size: 12px;
+            line-height: 1.5;
+            color: var(--muted);
+            max-width: 760px;
+        }
+
+        .section-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .table-wrap,
+        .mini-table-wrap {
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        .table-wrap {
+            max-height: var(--table-max-h);
+        }
+
+        .events-table,
+        .mini-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .events-table {
+            min-width: 1220px;
+        }
+
+        .mini-table {
+            min-width: 760px;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 11px 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            vertical-align: top;
+            font-size: 12px;
+        }
+
+        body.theme-light th,
+        body.theme-light td {
+            border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+        }
+
+        th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: color-mix(in srgb, var(--bg-2) 92%, #09111a 8%);
+            color: var(--muted);
+            font-weight: 900;
+            letter-spacing: 0.02em;
+            white-space: nowrap;
+        }
+
+        body.theme-light th {
+            background: color-mix(in srgb, #edf4fb 92%, white 8%);
+        }
+
+        tbody tr:hover td {
+            background: rgba(255,255,255,0.02);
+        }
+
+        body.theme-light tbody tr:hover td {
+            background: rgba(15,23,42,0.02);
+        }
+
+        .mono {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        }
+
+        .command {
+            min-width: 300px;
+            max-width: 420px;
+            white-space: normal;
+            word-break: break-word;
+            line-height: 1.5;
+        }
+
+        .score {
+            font-variant-numeric: tabular-nums;
+            font-weight: 900;
+        }
+
+        .score-low { color: #86efac; }
+        .score-medium { color: #fcd34d; }
+        .score-high { color: #fca5a5; }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            max-width: 100%;
+            white-space: nowrap;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: 0.02em;
+        }
+
+        .badge-low {
+            color: #86efac;
+            background: var(--success-soft);
+            border-color: rgba(34,197,94,0.22);
+        }
+
+        .badge-medium {
+            color: #fcd34d;
+            background: var(--warning-soft);
+            border-color: rgba(245,158,11,0.22);
+        }
+
+        .badge-high {
+            color: #fca5a5;
+            background: var(--danger-soft);
+            border-color: rgba(239,68,68,0.22);
+        }
+
+        .badge-watch {
+            color: #fde68a;
+            background: rgba(245,158,11,0.14);
+            border-color: rgba(245,158,11,0.22);
+        }
+
+        .badge-monitor {
+            color: #93c5fd;
+            background: rgba(56,189,248,0.14);
+            border-color: rgba(56,189,248,0.22);
+        }
+
+        .badge-escalated,
+        .badge-rate-limited,
+        .badge-watchlisted {
+            color: #fca5a5;
+            background: var(--danger-soft);
+            border-color: rgba(239,68,68,0.22);
+        }
+
+        .badge-source-hybrid,
+        .badge-source-lstm,
+        .badge-source-command,
+        .badge-source-policy,
+        .badge-source-rules {
+            color: #d8b4fe;
+            background: var(--purple-soft);
+            border-color: rgba(124,92,255,0.22);
+        }
+
+        .badge-attack-normal,
+        .badge-attack-benign {
+            color: #86efac;
+            background: var(--success-soft);
+            border-color: rgba(34,197,94,0.22);
+        }
+
+        .badge-attack-reconnaissance,
+        .badge-attack-scan,
+        .badge-attack-web-attack {
+            color: #93c5fd;
+            background: rgba(56,189,248,0.14);
+            border-color: rgba(56,189,248,0.22);
+        }
+
+        .badge-attack-exploitation,
+        .badge-attack-ddos,
+        .badge-attack-dos,
+        .badge-attack-bruteforce,
+        .badge-attack-privilege-abuse,
+        .badge-attack-destructive-or-credential-access {
+            color: #fca5a5;
+            background: var(--danger-soft);
+            border-color: rgba(239,68,68,0.22);
+        }
+
+        .row-actions {
+            display: flex;
+            justify-content: center;
+        }
+
+        .icon-btn {
+            width: 34px;
+            height: 34px;
+            display: grid;
+            place-items: center;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--panel-soft);
+            color: var(--text);
+            cursor: pointer;
+            transition: transform 0.16s ease, background 0.16s ease;
+        }
+
+        .icon-btn:hover {
+            transform: translateY(-1px);
+            background: var(--panel-soft-2);
+        }
+
+        .details-row td {
+            padding: 0;
+            background: rgba(255,255,255,0.015);
+        }
+
+        body.theme-light .details-row td {
+            background: rgba(15,23,42,0.015);
+        }
+
+        .details-panel {
+            padding: 14px;
+            display: grid;
+            gap: 12px;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .detail-box {
+            border: 1px solid var(--border);
+            background: var(--panel-soft);
+            border-radius: 12px;
+            padding: 12px;
+            min-width: 0;
+        }
+
+        .detail-k {
+            font-size: 10px;
+            color: var(--muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            font-weight: 800;
+        }
+
+        .detail-v {
+            font-size: 13px;
+            font-weight: 900;
+            word-break: break-word;
+            line-height: 1.5;
+        }
+
+        .detail-command,
+        .alert-command {
+            border: 1px solid var(--border);
+            background: #091224;
+            border-radius: 12px;
+            padding: 14px;
+        }
+
+        body.theme-light .detail-command,
+        body.theme-light .alert-command {
+            background: rgba(226,232,240,0.55);
+        }
+
+        .detail-command pre,
+        .alert-command pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-break: break-word;
+            line-height: 1.6;
+            font-size: 12px;
+            color: #dbeafe;
+        }
+
+        body.theme-light .detail-command pre,
+        body.theme-light .alert-command pre {
+            color: #0f172a;
+        }
+
+        .health-list {
+            display: grid;
+            gap: 12px;
+            padding: 14px;
+        }
+
+        .health-card {
+            border: 1px solid var(--border);
+            background: var(--panel-soft);
+            border-radius: 16px;
+            padding: 14px;
+            min-width: 0;
+        }
+
+        .health-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .health-name {
+            font-size: 13px;
+            font-weight: 900;
+        }
+
+        .health-status {
+            font-size: 10px;
+            font-weight: 900;
+            padding: 6px 10px;
+            border-radius: 999px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            border: 1px solid transparent;
+        }
+
+        .status-ok {
+            color: #86efac;
+            background: rgba(34,197,94,0.14);
+            border-color: rgba(34,197,94,0.22);
+        }
+
+        .status-warn {
+            color: #fcd34d;
+            background: rgba(245,158,11,0.14);
+            border-color: rgba(245,158,11,0.22);
+        }
+
+        .status-bad {
+            color: #fca5a5;
+            background: rgba(239,68,68,0.14);
+            border-color: rgba(239,68,68,0.22);
+        }
+
+        .health-meta {
+            display: grid;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        .health-meta strong {
+            color: var(--text);
+        }
+
+        .empty-cell {
             text-align: center;
-            box-shadow: 0 25px 50px rgba(239, 68, 68, 0.4);
-            animation: alertPulse 0.5s ease-in-out;
+            color: var(--muted);
+            padding: 22px 12px;
         }
 
-        @keyframes alertPulse {
-            0% { transform: scale(0.9); opacity: 0; }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); opacity: 1; }
+        .new-row {
+            animation: pulseRow 1.3s ease;
         }
 
-        .alert-icon {
-            font-size: 4rem;
-            margin-bottom: 1.5rem;
+        @keyframes pulseRow {
+            0% { background: rgba(36,196,255,0.16); }
+            100% { background: transparent; }
         }
 
-        .alert-high { color: var(--danger); }
-        .alert-medium { color: var(--warning); }
+        .alert-overlay {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(2,8,23,0.72);
+            z-index: 999;
+        }
+
+        .alert-modal {
+            width: min(760px, 100%);
+            max-height: min(90vh, 920px);
+            overflow: auto;
+            background: linear-gradient(180deg, #10192d, #0c1324);
+            border: 1px solid rgba(239,68,68,0.22);
+            border-radius: 20px;
+            box-shadow: 0 30px 70px rgba(0,0,0,0.45);
+        }
+
+        body.theme-light .alert-modal {
+            background: linear-gradient(180deg, #ffffff, #f8fafc);
+            border-color: rgba(239,68,68,0.18);
+        }
+
+        .alert-head {
+            padding: 18px 20px;
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: flex-start;
+            background: linear-gradient(180deg, rgba(239,68,68,0.16), rgba(239,68,68,0.05));
+            border-bottom: 1px solid rgba(239,68,68,0.18);
+        }
 
         .alert-title {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            background: linear-gradient(135deg, var(--danger), #dc2626);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            margin: 0 0 5px;
+            font-size: 18px;
+            font-weight: 900;
         }
 
-        .alert-details {
-            background: rgba(239, 68, 68, 0.1);
-            padding: 1.5rem;
+        .alert-sub {
+            font-size: 12px;
+            color: #fca5a5;
+            line-height: 1.45;
+        }
+
+        .close-btn {
+            width: 38px;
+            height: 38px;
             border-radius: 12px;
-            margin: 1.5rem 0;
-            font-family: 'SF Mono', monospace;
-            font-size: 1.1rem;
-        }
-
-        .close-alert {
-            background: var(--danger);
-            color: white;
-            border: none;
-            padding: 1rem 2rem;
-            border-radius: 50px;
-            font-weight: 600;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.04);
+            color: var(--text);
             cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 1rem;
+            flex: 0 0 auto;
         }
 
-        .close-alert:hover {
-            background: #dc2626;
-            transform: translateY(-2px);
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2.5rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 1px solid var(--border);
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .logo {
-            font-size: 2rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--accent-cyber), var(--accent-purple));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .phase-badge {
-            background: linear-gradient(135deg, var(--accent-gold), var(--warning));
-            padding: 0.5rem 1.5rem;
-            border-radius: 50px;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-
-        .status-bar {
-            display: flex;
-            gap: 1rem;
-            font-size: 0.9rem;
-            background: var(--bg-card);
-            padding: 0.75rem 1.25rem;
-            border-radius: 12px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        .stats-grid {
+        .alert-body {
+            padding: 18px;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
+            gap: 12px;
         }
 
-        .stat-card {
-            background: var(--bg-card);
-            border-radius: 16px;
-            padding: 2rem;
+        .alert-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .alert-kv {
             border: 1px solid var(--border);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
+            background: var(--panel-soft);
+            border-radius: 12px;
+            padding: 12px;
+            min-width: 0;
         }
 
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--accent-cyber), var(--accent-purple));
+        .alert-k {
+            font-size: 11px;
+            color: var(--muted);
+            margin-bottom: 6px;
+            font-weight: 800;
         }
 
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow);
-            border-color: var(--accent-cyber);
+        .alert-v {
+            font-size: 13px;
+            font-weight: 900;
+            word-break: break-word;
+            line-height: 1.5;
         }
 
-        .stat-icon { font-size: 2.5rem; margin-bottom: 1rem; opacity: 0.8; }
-        .stat-value { font-size: 2.8rem; font-weight: 700; margin-bottom: 0.25rem; }
-        .stat-label { font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
-
-        /* PHASE 10: NEW CARDS */
-        .phase10-card {
-            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(16, 185, 129, 0.1));
-            border: 1px solid rgba(239, 68, 68, 0.3);
+        @media (max-width: 1480px) {
+            .kpi-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
         }
 
-        .bad-actors-card, .decoys-card {
-            grid-column: span 1;
+        @media (max-width: 1240px) {
+            .hero-grid,
+            .lower-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .table-wrap {
+                max-height: none;
+            }
         }
 
-        .ml-card { grid-column: span 2; background: linear-gradient(135deg, var(--bg-card), rgba(124, 58, 237, 0.1)); }
+        @media (max-width: 920px) {
+            .hero-top {
+                flex-direction: column;
+                align-items: stretch;
+            }
 
-        .ml-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; }
-        .ml-model { background: rgba(255, 255, 255, 0.05); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); }
-        .ml-header { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem; }
-        .ml-accuracy { font-size: 1.8rem; font-weight: 700; color: var(--success); margin-bottom: 0.35rem; }
-        .ml-version { font-size: 0.8rem; color: var(--text-secondary); }
+            .hero-actions {
+                justify-content: flex-start;
+            }
 
-        .table-container {
-            background: var(--bg-card);
-            border-radius: 20px;
-            overflow: hidden;
-            border: 1px solid var(--border);
-            box-shadow: var(--shadow);
-            margin-bottom: 2rem;
+            .hero-mini-stats,
+            .details-grid,
+            .alert-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
         }
 
-        .table-header {
-            background: linear-gradient(135deg, rgba(26, 26, 46, 0.9), rgba(20, 20, 40, 0.9));
-            padding: 1.5rem 2rem;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 1rem;
-            flex-wrap: wrap;
+        @media (max-width: 760px) {
+            .shell {
+                padding: 12px;
+            }
+
+            .toolbar {
+                align-items: stretch;
+            }
+
+            .toolbar-actions,
+            .section-actions {
+                width: 100%;
+            }
+
+            .toolbar-actions .btn,
+            .section-actions .btn,
+            .hero-actions .btn {
+                flex: 1 1 auto;
+            }
+
+            .quick-grid,
+            .hero-mini-stats,
+            .details-grid,
+            .alert-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .kpi-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .section-head {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .command {
+                min-width: 220px;
+                max-width: 260px;
+            }
         }
 
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 1.25rem 1.5rem; text-align: left; vertical-align: middle; }
-        th { font-weight: 500; font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
-        tr { border-bottom: 1px solid rgba(75, 85, 99, 0.1); transition: all 0.2s; }
-        tr:hover { background: rgba(0, 245, 255, 0.08); }
-        tr.new-row { background: rgba(0, 245, 255, 0.15) !important; animation: flash 2s; }
+        @media (max-width: 520px) {
+            .kpi-grid {
+                grid-template-columns: 1fr;
+            }
 
-        .ip { color: var(--accent-cyber); font-family: 'SF Mono', monospace; font-weight: 500; }
-        .type-badge, .attack-class, .severity { padding: 0.375rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; display: inline-block; white-space: nowrap; }
-        .ssh { background: rgba(16, 185, 129, 0.2); color: var(--success); }
-        .web { background: rgba(124, 58, 237, 0.2); color: var(--accent-purple); }
-        .normal { background: rgba(16, 185, 129, 0.2); color: var(--success); }
-        .brute-force { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
-        .exploitation { background: linear-gradient(135deg, var(--danger), #dc2626); color: white; }
-        .low { background: rgba(16, 185, 129, 0.2); color: var(--success); }
-        .medium { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
-        .high { background: linear-gradient(135deg, var(--danger), #dc2626); color: white; }
-        .cmd-cell { max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .status-value,
+            .kpi-value,
+            .quick-value,
+            .mini-chip .value {
+                font-size: 22px;
+            }
 
-        /* PHASE 10: Bad Actors Table */
-        .bad-actor-row.escalated { border-left: 4px solid var(--danger); }
-        .decoys-link { color: var(--accent-gold); text-decoration: none; font-weight: 600; }
-        .decoys-link:hover { text-decoration: underline; }
-
-        @keyframes flash {
-            0%, 100% { background: rgba(0, 245, 255, 0.15); }
-            50% { background: rgba(0, 245, 255, 0.3); }
-        }
-
-        @media (max-width: 1600px) {
-            .stats-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
-            .ml-card { grid-column: span 1; }
-        }
-
-        @media (max-width: 1400px) { .table-container { overflow-x: auto; } }
-        @media (max-width: 1024px) { .ml-stats { grid-template-columns: 1fr; } }
-        @media (max-width: 768px) {
-            .container { padding: 1.25rem; }
-            .stats-grid { grid-template-columns: 1fr; }
-            .table-header { flex-direction: column; align-items: flex-start; }
-            th, td { padding: 1rem; }
+            .eyebrow {
+                font-size: 10px;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- PHASE 10: ALERT OVERLAY -->
-    <div id="alert-overlay" class="alert-overlay">
-        <div id="alert-modal" class="alert-modal">
-            <div id="alert-icon" class="alert-icon">
-                <i class="fas fa-exclamation-triangle"></i>
+    <div class="shell">
+        <div class="toolbar">
+            <div class="toolbar-title">
+                <i class="fas fa-shield-virus"></i>
+                Cybersecurity monitoring workspace
             </div>
-            <div id="alert-title" class="alert-title">HIGH SEVERITY ALERT</div>
-            <div id="alert-details" class="alert-details">
-                Loading threat details...
+            <div class="toolbar-actions">
+                <button class="btn" id="theme-toggle-btn" type="button">
+                    <i class="fas fa-moon"></i> Toggle Theme
+                </button>
+                <button class="btn" id="density-toggle-btn" type="button">
+                    <i class="fas fa-compress"></i> Compact Mode
+                </button>
             </div>
-            <div id="alert-ip"></div>
-            <div id="alert-action"></div>
-            <button id="close-alert" class="close-alert">
-                <i class="fas fa-times"></i> ACKNOWLEDGE
-            </button>
         </div>
+
+        <section class="hero-grid">
+            <div class="panel hero-panel">
+                <div class="eyebrow">
+                    <i class="fas fa-shield-halved"></i>
+                    Security Operations
+                </div>
+
+                <div class="hero-top">
+                    <div>
+                        <h1>Honeypot Dashboard</h1>
+                        <div class="hero-sub">
+                            Real-time SSH and web telemetry, hybrid threat scoring, live alerts, actor watchlisting, and model-backed security intelligence for your honeypot environment.
+                        </div>
+                    </div>
+
+                    <div class="hero-actions">
+                        <button class="btn btn-accent" id="scroll-stream-btn" type="button">
+                            <i class="fas fa-table-list"></i> Event Stream
+                        </button>
+                        <button class="btn" id="scroll-actors-btn" type="button">
+                            <i class="fas fa-user-secret"></i> Bad Actors
+                        </button>
+                    </div>
+                </div>
+
+                <div class="hero-mini-stats">
+                    <div class="mini-chip">
+                        <div class="label">Visible Feed Average</div>
+                        <div class="value" id="summary-visible-avg-threat">{{ "%.3f"|format(avg_threat or 0) }}</div>
+                    </div>
+                    <div class="mini-chip">
+                        <div class="label">Global Policy Escalations</div>
+                        <div class="value" id="summary-global-policy-escalations">{{ policy_escalations or 0 }}</div>
+                    </div>
+                    <div class="mini-chip">
+                        <div class="label">Global CICIoT Hits</div>
+                        <div class="value" id="summary-global-ciciot-attacks">{{ ciciot_attack_count or 0 }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel status-panel">
+                <div class="status-card">
+                    <div class="status-top">
+                        <div class="status-title">Live Feed</div>
+                        <div id="ws-status" class="live-pill status-disconnected">
+                            <i class="fas fa-circle"></i>
+                            DISCONNECTED
+                        </div>
+                    </div>
+                    <div class="status-value" id="live-count">{{ live_count or 0 }}</div>
+                    <div class="status-sub">Rows visible in the current stream</div>
+                </div>
+
+                <div class="quick-grid">
+                    <div class="quick-stat">
+                        <div class="quick-label">Visible Rows</div>
+                        <div class="quick-value" id="summary-visible-rows">{{ live_count or 0 }}</div>
+                        <div class="quick-note">Rendered now</div>
+                    </div>
+                    <div class="quick-stat">
+                        <div class="quick-label">Tracked Actors</div>
+                        <div class="quick-value" id="summary-tracked-actors">{{ bad_actors_count or 0 }}</div>
+                        <div class="quick-note">Persistent watchlist</div>
+                    </div>
+                    <div class="quick-stat">
+                        <div class="quick-label">Visible High</div>
+                        <div class="quick-value" id="summary-visible-high">{{ visible_high or 0 }}</div>
+                        <div class="quick-note">Current stream only</div>
+                    </div>
+                    <div class="quick-stat">
+                        <div class="quick-label">Socket</div>
+                        <div class="quick-value" id="ws-short-status">OFF</div>
+                        <div class="quick-note">Connection state</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="kpi-grid">
+            <div class="kpi">
+                <div class="kpi-top">
+                    <div class="kpi-icon" style="color: #fbbf24;"><i class="fas fa-database"></i></div>
+                </div>
+                <div class="kpi-value" id="kpi-total-events">{{ total_events or 0 }}</div>
+                <div class="kpi-label">Total Events</div>
+            </div>
+
+            <div class="kpi">
+                <div class="kpi-top">
+                    <div class="kpi-icon" style="color: #22c55e;"><i class="fas fa-terminal"></i></div>
+                </div>
+                <div class="kpi-value" id="kpi-ssh-events">{{ ssh_count or 0 }}</div>
+                <div class="kpi-label">SSH Events</div>
+            </div>
+
+            <div class="kpi">
+                <div class="kpi-top">
+                    <div class="kpi-icon" style="color: #8b5cf6;"><i class="fas fa-globe"></i></div>
+                </div>
+                <div class="kpi-value" id="kpi-web-events">{{ web_count or 0 }}</div>
+                <div class="kpi-label">Web Events</div>
+            </div>
+
+            <div class="kpi">
+                <div class="kpi-top">
+                    <div class="kpi-icon" style="color: #ef4444;"><i class="fas fa-triangle-exclamation"></i></div>
+                </div>
+                <div class="kpi-value" id="kpi-high-severity">{{ high_count or 0 }}</div>
+                <div class="kpi-label">High Severity</div>
+            </div>
+
+            <div class="kpi">
+                <div class="kpi-top">
+                    <div class="kpi-icon" style="color: #24c4ff;"><i class="fas fa-chart-line"></i></div>
+                </div>
+                <div class="kpi-value" id="kpi-average-threat">{{ "%.3f"|format(avg_threat or 0) }}</div>
+                <div class="kpi-label">Visible Average Threat</div>
+            </div>
+
+            <div class="kpi">
+                <div class="kpi-top">
+                    <div class="kpi-icon" style="color: #f87171;"><i class="fas fa-user-secret"></i></div>
+                </div>
+                <div class="kpi-value" id="kpi-tracked-actors">{{ bad_actors_count or 0 }}</div>
+                <div class="kpi-label">Tracked Actors</div>
+            </div>
+        </section>
+
+        <section class="panel stream-section" id="event-stream-panel">
+            <div class="section-head">
+                <div>
+                    <div class="section-title">Live Event Stream</div>
+                    <div class="section-sub">Incoming sessions, hybrid decisions, severity output, and expandable forensic details. This section is intentionally full-width for desktop visibility.</div>
+                </div>
+                <div class="section-actions">
+                    <button class="btn" id="refresh-stats-btn" type="button"><i class="fas fa-rotate-right"></i> Refresh</button>
+                    <button class="btn" id="clear-rows-btn" type="button"><i class="fas fa-broom"></i> Clear View</button>
+                </div>
+            </div>
+
+            <div class="table-wrap">
+                <table class="events-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Source IP</th>
+                            <th>Type</th>
+                            <th>Command / Activity</th>
+                            <th>Threat</th>
+                            <th>Severity</th>
+                            <th>Attack Class</th>
+                            <th>Decision</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="events-tbody">
+                        {% for event in events %}
+                        <tr
+                            data-event-type="{{ event.event_type or 'ssh' }}"
+                            data-severity="{{ event.severity or 'LOW' }}"
+                            data-threat-score="{{ event.threat_score or 0 }}"
+                            data-lstm-score="{{ event.lstm_score or 0 }}"
+                            data-command-score="{{ event.command_score or 0 }}"
+                            data-ciciot-score="{{ event.ciciot_score or 0 }}"
+                            data-ciciot-attack="{{ event.ciciot_attack or 'Normal' }}"
+                            data-source="{{ event.decision_source or 'rules' }}"
+                            data-policy-escalated="{{ 'true' if event.policy_escalated else 'false' }}"
+                            data-source-ip="{{ event.source_ip or '-' }}"
+                            data-command="{{ event.command or '-' }}"
+                            data-attack-class="{{ event.attack_class or 'normal' }}"
+                            data-action-taken="{{ event.action_taken or 'logged' }}"
+                            data-lstm-session="{{ event.lstm_session or 'Unknown' }}"
+                            data-ciciot-confidence="{{ event.ciciot_confidence or 0 }}"
+                            data-base-severity="{{ event.base_severity or 'LOW' }}"
+                            data-floor-severity="{{ event.floor_severity or 'LOW' }}"
+                            data-timestamp="{{ event.timestamp_formatted or '-' }}"
+                        >
+                            <td class="mono">{{ event.timestamp_formatted or '-' }}</td>
+                            <td class="mono">{{ event.source_ip or '-' }}</td>
+                            <td>{{ (event.event_type or 'ssh')|upper }}</td>
+                            <td class="command mono" title="{{ event.command or '' }}">{{ event.command or '-' }}</td>
+                            <td class="score">{{ '%.3f'|format(event.threat_score or 0) }}</td>
+                            <td>
+                                {% set sev = (event.severity or 'LOW') %}
+                                <span class="badge badge-{{ sev|lower }}">{{ sev }}</span>
+                            </td>
+                            <td>
+                                {% set atk = (event.attack_class or 'normal') %}
+                                <span class="badge badge-attack-{{ atk|lower|replace(' ', '-')|replace('_','-') }}">{{ atk }}</span>
+                            </td>
+                            <td>
+                                {% set src = (event.decision_source or 'rules') %}
+                                <span class="badge badge-source-{{ src|lower|replace(' ', '-')|replace('_','-') }}">{{ src|upper }}</span>
+                            </td>
+                            <td>
+                                <div class="row-actions">
+                                    <button class="icon-btn detail-toggle-btn" type="button" title="View details">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="lower-grid">
+            <div class="panel">
+                <div class="section-head">
+                    <div>
+                        <div class="section-title">Model Health</div>
+                        <div class="section-sub">Runtime model loading state and hybrid scoring pipeline readiness.</div>
+                    </div>
+                </div>
+
+                <div class="health-list">
+                    <div class="health-card">
+                        <div class="health-top">
+                            <div class="health-name"><i class="fas fa-brain"></i> LSTM Behavior Model</div>
+                            <div class="health-status {% if lstm_info and lstm_info.status == 'loaded' %}status-ok{% else %}status-warn{% endif %}">
+                                {{ lstm_info.status if lstm_info else 'unknown' }}
+                            </div>
+                        </div>
+                        <div class="health-meta">
+                            <div><strong>Version:</strong> {{ lstm_info.version if lstm_info else '-' }}</div>
+                            <div><strong>Accuracy:</strong> {{ lstm_info.accuracy if lstm_info and lstm_info.accuracy is defined else '-' }}</div>
+                            <div><strong>Classes:</strong> {{ lstm_info.classes if lstm_info and lstm_info.classes is defined else '-' }}</div>
+                        </div>
+                    </div>
+
+                    <div class="health-card">
+                        <div class="health-top">
+                            <div class="health-name"><i class="fas fa-network-wired"></i> CICIoT Classifier</div>
+                            <div class="health-status {% if ciciot_info and ciciot_info.status == 'loaded' %}status-ok{% else %}status-warn{% endif %}">
+                                {{ ciciot_info.status if ciciot_info else 'unknown' }}
+                            </div>
+                        </div>
+                        <div class="health-meta">
+                            <div><strong>Version:</strong> {{ ciciot_info.version if ciciot_info else '-' }}</div>
+                            <div><strong>Features:</strong> {{ ciciot_info.features_count if ciciot_info and ciciot_info.features_count is defined else '-' }}</div>
+                            <div><strong>Type:</strong> {{ ciciot_info.type if ciciot_info else '-' }}</div>
+                        </div>
+                    </div>
+
+                    <div class="health-card">
+                        <div class="health-top">
+                            <div class="health-name"><i class="fas fa-layer-group"></i> Fusion Engine</div>
+                            <div class="health-status status-ok">active</div>
+                        </div>
+                        <div class="health-meta">
+                            <div><strong>Pipeline:</strong> Command + LSTM + CICIoT</div>
+                            <div><strong>Outputs:</strong> Threat, severity, action</div>
+                            <div><strong>Alerts:</strong> WebSocket live notifications</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel" id="bad-actors-panel">
+                <div class="section-head">
+                    <div>
+                        <div class="section-title">Bad Actor Tracking</div>
+                        <div class="section-sub">Watchlisted or escalated sources reconstructed from persistent backend state.</div>
+                    </div>
+                    <div class="badge badge-high">
+                        <i class="fas fa-user-secret"></i>
+                        <span id="bad-actors-badge-count">{{ bad_actors_count or 0 }}</span>
+                    </div>
+                </div>
+
+                <div class="mini-table-wrap">
+                    <table class="mini-table">
+                        <thead>
+                            <tr>
+                                <th>IP</th>
+                                <th>Max Threat</th>
+                                <th>High Alerts</th>
+                                <th>Last Attack</th>
+                                <th>Severity</th>
+                                <th>Enforcement</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bad-actors-tbody">
+                            <tr>
+                                <td colspan="6" class="empty-cell">Loading tracked actors...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
     </div>
 
-    <div class="container">
-        <div class="header">
-            <div class="logo">
-                <i class="fas fa-shield-alt"></i> Honeypot SOC • <span class="phase-badge">Phase {{ phase }}</span>
-            </div>
-            <div class="status-bar">
-                <span class="status-indicator" id="ws-status">
-                    <i class="fas fa-wifi"></i> Connecting WebSocket...
-                </span>
-                <span id="total-events">
-                    <i class="fas fa-bolt"></i> {{ total_events }} Events
-                </span>
-                <span id="bad-actors-count">
-                    <i class="fas fa-skull-crossbones"></i> 0 Bad Actors
-                </span>
-            </div>
-        </div>
-
-        <div class="stats-grid">
-            <!-- ML Models -->
-            <div class="stat-card ml-card">
-                <div class="ml-stats">
-                    <div class="ml-model">
-                        <div class="ml-header">RF v7.1</div>
-                        <div class="ml-accuracy">
-                            {{ "%.1f"|format(rf_info.accuracy * 100) if rf_info and rf_info.accuracy is defined else 'N/A' }}%
-                        </div>
-                        <div class="ml-version">{{ rf_info.version if rf_info and rf_info.version is defined else 'Disabled' }}</div>
-                    </div>
-                    <div class="ml-model">
-                        <div class="ml-header">LSTM v8.1</div>
-                        <div class="ml-accuracy">
-                            {{ "%.1f"|format(lstm_info.accuracy * 100) if lstm_info and lstm_info.accuracy is defined else 'N/A' }}%
-                        </div>
-                        <div class="ml-version">{{ lstm_info.version if lstm_info and lstm_info.version is defined else 'Disabled' }}</div>
-                    </div>
-                    <div class="ml-model">
-                        <div class="ml-header">Hybrid</div>
-                        <div class="ml-accuracy">97.9%</div>
-                        <div class="ml-version">{{ hybrid_info if hybrid_info else 'Adaptive Response Active' }}</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Core Stats -->
-            <div class="stat-card">
-                <div class="stat-icon" style="color: var(--accent-gold);"><i class="fas fa-bug"></i></div>
-                <div class="stat-value" id="stat-total">{{ total_events }}</div>
-                <div class="stat-label">Total Events</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon" style="color: var(--success);"><i class="fas fa-terminal"></i></div>
-                <div class="stat-value" id="stat-ssh">{{ ssh_count }}</div>
-                <div class="stat-label">SSH Attacks</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon" style="color: var(--accent-purple);"><i class="fas fa-globe"></i></div>
-                <div class="stat-value" id="stat-web">{{ web_count }}</div>
-                <div class="stat-label">Web Probes</div>
-            </div>
-
-            <!-- PHASE 10: NEW STATS -->
-            <div class="stat-card phase10-card">
-                <div class="stat-icon" style="color: var(--danger);"><i class="fas fa-exclamation-triangle"></i></div>
-                <div class="stat-value" id="stat-high">{{ events|selectattr('severity', 'equalto', 'HIGH')|list|length }}</div>
-                <div class="stat-label">High Severity</div>
-            </div>
-            <div class="stat-card phase10-card bad-actors-card">
-                <div class="stat-icon" style="color: var(--warning);"><i class="fas fa-skull-crossbones"></i></div>
-                <div class="stat-value" id="stat-bad-actors">0</div>
-                <div class="stat-label">Bad Actors</div>
-            </div>
-            <div class="stat-card phase10-card decoys-card">
-                <div class="stat-icon" style="color: var(--accent-gold);"><i class="fas fa-file-alt"></i></div>
-                <div class="stat-value" id="stat-decoys-served">0</div>
-                <div class="stat-label">Decoys Served</div>
-            </div>
-        </div>
-
-        <!-- Events Table -->
-        <div class="table-container">
-            <div class="table-header">
+    <div class="alert-overlay" id="alert-overlay">
+        <div class="alert-modal">
+            <div class="alert-head">
                 <div>
-                    <i class="fas fa-list"></i> Live Attack Feed (Last 50) • <span id="live-count">{{ events|length }}</span> Events
+                    <div class="alert-title">High Severity Alert</div>
+                    <div class="alert-sub">Real-time escalation triggered by hybrid scoring or policy floor enforcement.</div>
                 </div>
-                <div id="ws-indicator" style="font-size: 0.85rem; color: var(--text-secondary);">
-                    <i class="fas fa-circle" style="color: var(--success);"></i> WebSocket Live
-                </div>
+                <button class="close-btn" id="close-alert-btn" type="button"><i class="fas fa-xmark"></i></button>
             </div>
-            <table id="events-table">
-                <thead>
-                    <tr>
-                        <th><i class="fas fa-clock"></i> Time (IST)</th>
-                        <th><i class="fas fa-server"></i> Attacker IP</th>
-                        <th><i class="fas fa-plug"></i> Type</th>
-                        <th><i class="fas fa-terminal"></i> Command</th>
-                        <th><i class="fas fa-brain"></i> Attack Class</th>
-                        <th><i class="fas fa-exclamation-triangle"></i> Severity</th>
-                    </tr>
-                </thead>
-                <tbody id="events-tbody">
-                    {% for event in events %}
-                    <tr>
-                        <td>{{ event.timestamp_formatted }}</td>
-                        <td><span class="ip">{{ event.source_ip }}</span></td>
-                        <td><span class="type-badge {{ event.event_type }}">{{ event.event_type.upper() }}</span></td>
-                        <td class="cmd-cell" title="{{ event.command or '' }}">{{ (event.command or '')[:50] }}{% if event.command and event.command|length > 50 %}...{% endif %}</td>
-                        <td><span class="attack-class {{ event.attack_class }}">{{ event.attack_class.replace('-', ' ').title() }}</span></td>
-                        <td><span class="severity {{ event.severity.lower() }}">{{ event.severity.upper() }}</span></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
 
-        <!-- PHASE 10: Bad Actors Table -->
-        <div class="table-container">
-            <div class="table-header">
-                <div>
-                    <i class="fas fa-skull-crossbones"></i> Bad Actors (Escalated) • <span id="bad-actors-live-count">0</span>
+            <div class="alert-body">
+                <div class="alert-grid">
+                    <div class="alert-kv">
+                        <div class="alert-k">Source IP</div>
+                        <div class="alert-v mono" id="alert-ip">-</div>
+                    </div>
+                    <div class="alert-kv">
+                        <div class="alert-k">Severity</div>
+                        <div class="alert-v" id="alert-severity">-</div>
+                    </div>
+                    <div class="alert-kv">
+                        <div class="alert-k">Threat Score</div>
+                        <div class="alert-v" id="alert-score">0.000</div>
+                    </div>
+                    <div class="alert-kv">
+                        <div class="alert-k">Decision Source</div>
+                        <div class="alert-v" id="alert-source">-</div>
+                    </div>
+                    <div class="alert-kv">
+                        <div class="alert-k">Attack Class</div>
+                        <div class="alert-v" id="alert-attack-class">-</div>
+                    </div>
+                    <div class="alert-kv">
+                        <div class="alert-k">Action Taken</div>
+                        <div class="alert-v" id="alert-action">-</div>
+                    </div>
                 </div>
-                <a href="/decoys" target="_blank" class="decoys-link">
-                    <i class="fas fa-file-alt"></i> Decoy Files →
-                </a>
+
+                <div class="alert-grid">
+                    <div class="alert-kv">
+                        <div class="alert-k">LSTM Score</div>
+                        <div class="alert-v" id="alert-lstm-score">0.000</div>
+                    </div>
+                    <div class="alert-kv">
+                        <div class="alert-k">Command Score</div>
+                        <div class="alert-v" id="alert-command-score">0.000</div>
+                    </div>
+                    <div class="alert-kv">
+                        <div class="alert-k">CICIoT Score</div>
+                        <div class="alert-v" id="alert-ciciot-score">0.000</div>
+                    </div>
+                    <div class="alert-kv">
+                        <div class="alert-k">CICIoT Attack</div>
+                        <div class="alert-v" id="alert-ciciot-attack">-</div>
+                    </div>
+                </div>
+
+                <div class="alert-command">
+                    <div class="alert-k">Command / Activity</div>
+                    <pre id="alert-command">-</pre>
+                </div>
             </div>
-            <table id="bad-actors-table">
-                <thead>
-                    <tr>
-                        <th><i class="fas fa-server"></i> IP</th>
-                        <th><i class="fas fa-exclamation-triangle"></i> Threat Score</th>
-                        <th><i class="fas fa-clock"></i> First Seen</th>
-                        <th><i class="fas fa-fire"></i> High Alerts</th>
-                        <th><i class="fas fa-file-alt"></i> Status</th>
-                    </tr>
-                </thead>
-                <tbody id="bad-actors-tbody">
-                    <tr><td colspan="5" style="text-align: center; color: var(--text-secondary);">No escalated actors</td></tr>
-                </tbody>
-            </table>
         </div>
     </div>
 
     <script>
-        class Phase10Dashboard {
+        class HoneypotDashboard {
             constructor() {
+                this.maxRows = 50;
                 this.ws = null;
-                this.reconnectAttempts = 0;
-                this.maxReconnectAttempts = 10;
-                this.reconnectDelay = 1500;
-                this.badActors = new Map();
-                this.init();
-            }
+                this.wsReconnectDelay = 2500;
+                this.statsRefreshIntervalMs = 3000;
+                this.globalBadActors = new Map();
+                this.themeKey = 'honeypot-dashboard-theme';
+                this.compactKey = 'honeypot-dashboard-compact';
 
-            init() {
+                this.bindUI();
+                this.applyStoredPreferences();
+                this.bindExistingDetailToggles();
+                this.refreshVisibleStats();
+                this.fetchGlobalStats();
+                this.startStatsPolling();
                 this.connectWebSocket();
-                this.attachAlertHandlers();
-                this.updateBadActorsStats();
             }
 
-            attachAlertHandlers() {
-                document.getElementById('close-alert').onclick = () => {
-                    document.getElementById('alert-overlay').style.display = 'none';
-                };
+            bindUI() {
+                document.getElementById('refresh-stats-btn')?.addEventListener('click', () => {
+                    this.refreshVisibleStats();
+                    this.fetchGlobalStats();
+                });
+
+                document.getElementById('clear-rows-btn')?.addEventListener('click', () => {
+                    const tbody = document.getElementById('events-tbody');
+                    if (tbody) tbody.innerHTML = '';
+                    this.refreshVisibleStats();
+                });
+
+                document.getElementById('close-alert-btn')?.addEventListener('click', () => {
+                    this.hideAlert();
+                });
+
+                document.getElementById('alert-overlay')?.addEventListener('click', (e) => {
+                    if (e.target.id === 'alert-overlay') this.hideAlert();
+                });
+
+                document.getElementById('theme-toggle-btn')?.addEventListener('click', () => {
+                    document.body.classList.toggle('theme-light');
+                    localStorage.setItem(this.themeKey, document.body.classList.contains('theme-light') ? 'light' : 'dark');
+                    this.updateThemeButtonLabel();
+                });
+
+                document.getElementById('density-toggle-btn')?.addEventListener('click', () => {
+                    document.body.classList.toggle('compact');
+                    localStorage.setItem(this.compactKey, document.body.classList.contains('compact') ? 'compact' : 'comfortable');
+                    this.updateDensityButtonLabel();
+                });
+
+                document.getElementById('scroll-stream-btn')?.addEventListener('click', () => {
+                    document.getElementById('event-stream-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
+
+                document.getElementById('scroll-actors-btn')?.addEventListener('click', () => {
+                    document.getElementById('bad-actors-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
             }
 
-            showHighSeverityAlert(data) {
-                const overlay = document.getElementById('alert-overlay');
-                const modal = document.getElementById('alert-modal');
-                const icon = document.getElementById('alert-icon');
-                const title = document.getElementById('alert-title');
-                const details = document.getElementById('alert-details');
-                const ipEl = document.getElementById('alert-ip');
-                const actionEl = document.getElementById('alert-action');
+            applyStoredPreferences() {
+                const savedTheme = localStorage.getItem(this.themeKey);
+                const savedCompact = localStorage.getItem(this.compactKey);
 
-                icon.innerHTML = '<i class="fas fa-exclamation-triangle alert-high"></i>';
-                title.textContent = data.title || 'HIGH SEVERITY THREAT';
-                details.textContent = data.message || 'Suspicious activity detected';
-                ipEl.innerHTML = `<strong>IP:</strong> <code>${data.ip || 'Unknown'}</code>`;
-                actionEl.innerHTML = `<strong>Action:</strong> <span style="color: ${data.action === 'BLOCKED' ? 'var(--danger)' : data.action === 'ESCALATING' ? 'var(--warning)' : 'var(--success)'}">${data.action || 'MONITORING'}</span>`;
+                if (savedTheme === 'light') {
+                    document.body.classList.add('theme-light');
+                }
 
-                // Sound alert + shake
-                this.playAlertSound();
-                modal.style.animation = 'alertPulse 0.5s ease-in-out';
-                overlay.style.display = 'flex';
+                if (savedCompact === 'compact') {
+                    document.body.classList.add('compact');
+                }
 
-                // Auto-dismiss after 10s
-                setTimeout(() => {
-                    overlay.style.display = 'none';
-                }, 10000);
+                this.updateThemeButtonLabel();
+                this.updateDensityButtonLabel();
             }
 
-            playAlertSound() {
-                // Create beep sound
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                oscillator.frequency.value = 800;
-                oscillator.type = 'square';
-                
-                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-                
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + 0.5);
+            updateThemeButtonLabel() {
+                const btn = document.getElementById('theme-toggle-btn');
+                if (!btn) return;
+                const isLight = document.body.classList.contains('theme-light');
+                btn.innerHTML = isLight
+                    ? '<i class="fas fa-moon"></i> Dark Theme'
+                    : '<i class="fas fa-sun"></i> Light Theme';
+            }
+
+            updateDensityButtonLabel() {
+                const btn = document.getElementById('density-toggle-btn');
+                if (!btn) return;
+                const isCompact = document.body.classList.contains('compact');
+                btn.innerHTML = isCompact
+                    ? '<i class="fas fa-expand"></i> Comfortable Mode'
+                    : '<i class="fas fa-compress"></i> Compact Mode';
+            }
+
+            bindExistingDetailToggles() {
+                document.querySelectorAll('.detail-toggle-btn').forEach((btn) => {
+                    btn.addEventListener('click', () => {
+                        const row = btn.closest('tr');
+                        this.toggleDetailsRow(row, btn);
+                    });
+                });
+
+                document.querySelectorAll('#events-tbody > tr').forEach((row) => {
+                    this.applyScoreClassToRow(row);
+                });
+            }
+
+            startStatsPolling() {
+                setInterval(() => {
+                    this.fetchGlobalStats();
+                }, this.statsRefreshIntervalMs);
             }
 
             connectWebSocket() {
-                const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-                const wsUrl = `${protocol}://${window.location.host}/ws`;
-                this.ws = new WebSocket(wsUrl);
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${protocol}//${window.location.host}/ws`;
 
-                this.ws.onopen = () => {
-                    console.log('✅ Phase 10 WebSocket connected');
-                    this.updateStatus('Connected', 'var(--success)');
-                    this.reconnectAttempts = 0;
-                };
+                try {
+                    this.ws = new WebSocket(wsUrl);
+                    this.setWsStatus(false, 'CONNECTING');
 
-                this.ws.onmessage = (event) => {
-                    try {
-                        const data = JSON.parse(event.data);
-                        if (data.type === 'alert') {
-                            this.showHighSeverityAlert(data);
-                        } else if (data.type === 'new_event' && data.event) {
-                            this.addEvent(data.event);
+                    this.ws.onopen = () => {
+                        this.setWsStatus(true, 'CONNECTED');
+                        try { this.ws.send('ping'); } catch (e) {}
+                    };
+
+                    this.ws.onmessage = (event) => {
+                        try {
+                            const payload = JSON.parse(event.data);
+                            this.handleSocketMessage(payload);
+                        } catch (err) {
+                            console.error('Invalid WebSocket message:', err);
                         }
-                    } catch (error) {
-                        console.error('WebSocket message error:', error);
-                    }
-                };
+                    };
 
-                this.ws.onclose = () => {
-                    console.log('WebSocket disconnected');
-                    this.updateStatus('Reconnecting...', 'var(--warning)');
-                    if (this.reconnectAttempts < this.maxReconnectAttempts) {
-                        this.reconnectAttempts++;
-                        const delay = this.reconnectDelay * this.reconnectAttempts;
-                        setTimeout(() => this.connectWebSocket(), delay);
-                    }
-                };
+                    this.ws.onclose = () => {
+                        this.setWsStatus(false, 'DISCONNECTED');
+                        setTimeout(() => this.connectWebSocket(), this.wsReconnectDelay);
+                    };
 
-                this.ws.onerror = (error) => {
-                    console.error('WebSocket error:', error);
-                    this.updateStatus('Error', 'var(--danger)');
-                };
-            }
-
-            updateStatus(status, color) {
-                const statusEl = document.getElementById('ws-status');
-                const indicator = document.getElementById('ws-indicator');
-                statusEl.innerHTML = `<i class="fas fa-wifi"></i> ${status}`;
-                statusEl.style.color = color;
-                indicator.innerHTML = `<i class="fas fa-circle" style="color: ${color};"></i> ${status}`;
-            }
-
-            formatISTTime(value) {
-                if (!value) return '--';
-                const parsed = new Date(value);
-                if (!isNaN(parsed.getTime())) {
-                    return parsed.toLocaleString('en-IN', {
-                        timeZone: 'Asia/Kolkata',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit',
-                        hour12: false
-                    });
+                    this.ws.onerror = () => {
+                        this.setWsStatus(false, 'ERROR');
+                    };
+                } catch (err) {
+                    console.error('WebSocket connect failed:', err);
+                    this.setWsStatus(false, 'FAILED');
+                    setTimeout(() => this.connectWebSocket(), this.wsReconnectDelay);
                 }
-                return value;
             }
 
-            safeText(value, fallback = '-') {
-                if (value === null || value === undefined || value === '') return fallback;
-                return String(value);
+            handleSocketMessage(payload) {
+                if (!payload || typeof payload !== 'object') return;
+
+                if (payload.type === 'new_event' && payload.event) {
+                    this.addEventRow(payload.event);
+                    this.refreshVisibleStats();
+                    this.fetchGlobalStats();
+                }
+
+                if (payload.type === 'alert') {
+                    const alertEvent = payload.event || payload;
+                    this.showAlert(alertEvent);
+                }
             }
 
-            titleCase(text) {
-                return String(text).replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            setWsStatus(isConnected, label) {
+                const el = document.getElementById('ws-status');
+                const shortEl = document.getElementById('ws-short-status');
+
+                if (el) {
+                    el.className = `live-pill ${isConnected ? 'status-connected' : 'status-disconnected'}`;
+                    el.innerHTML = `<i class="fas fa-circle"></i> ${this.escapeHtml(label)}`;
+                }
+
+                if (shortEl) {
+                    shortEl.textContent = isConnected ? 'ON' : label;
+                }
             }
 
-            addEvent(event) {
+            num(value, fallback = 0) {
+                const n = Number(value);
+                return Number.isFinite(n) ? n : fallback;
+            }
+
+            getFirstNumber(obj, keys, fallback = 0) {
+                for (const key of keys) {
+                    if (obj && obj[key] !== undefined && obj[key] !== null && obj[key] !== '') {
+                        const n = Number(obj[key]);
+                        if (Number.isFinite(n)) return n;
+                    }
+                }
+                return fallback;
+            }
+
+            formatScore(value) {
+                return this.num(value, 0).toFixed(3);
+            }
+
+            getScoreClass(value) {
+                const v = this.num(value, 0);
+                if (v >= 0.75) return 'score-high';
+                if (v >= 0.40) return 'score-medium';
+                return 'score-low';
+            }
+
+            sevClass(severity) {
+                const sev = String(severity || 'LOW').toUpperCase();
+                if (sev === 'HIGH') return 'badge-high';
+                if (sev === 'MEDIUM') return 'badge-medium';
+                return 'badge-low';
+            }
+
+            enforcementClass(value) {
+                const v = String(value || 'monitor').toLowerCase().replace(/[\s_]+/g, '-');
+                if (v === 'monitor') return 'badge badge-monitor';
+                if (v === 'watch') return 'badge badge-watch';
+                return `badge badge-${v}`;
+            }
+
+            attackClass(attack) {
+                const key = String(attack || 'normal').toLowerCase().replace(/[\s_]+/g, '-');
+                return `badge badge-attack-${key}`;
+            }
+
+            sourceClass(source) {
+                const key = String(source || 'rules').toLowerCase().replace(/[\s_]+/g, '-');
+                return `badge badge-source-${key}`;
+            }
+
+            escapeHtml(value) {
+                return String(value ?? '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+
+            formatTimeNow() {
+                const now = new Date();
+                return now.toLocaleTimeString([], { hour12: false });
+            }
+
+            buildDetailsHtml(row) {
+                const severity = String(row.dataset.severity || 'LOW').toUpperCase();
+                const attackClass = row.dataset.attackClass || 'normal';
+                const source = String(row.dataset.source || 'rules').toUpperCase();
+                const command = row.dataset.command || '-';
+                const eventType = String(row.dataset.eventType || 'ssh').toUpperCase();
+                const sourceIp = row.dataset.sourceIp || '-';
+                const actionTaken = row.dataset.actionTaken || 'logged';
+                const lstmSession = row.dataset.lstmSession || 'Unknown';
+                const ciciotAttack = row.dataset.ciciotAttack || 'None';
+                const policyEscalated = row.dataset.policyEscalated === 'true' ? 'Yes' : 'No';
+
+                return `
+                    <div class="details-panel">
+                        <div class="details-grid">
+                            <div class="detail-box">
+                                <div class="detail-k">Threat Score</div>
+                                <div class="detail-v ${this.getScoreClass(row.dataset.threatScore)}">${this.formatScore(row.dataset.threatScore)}</div>
+                            </div>
+                            <div class="detail-box">
+                                <div class="detail-k">LSTM Score</div>
+                                <div class="detail-v ${this.getScoreClass(row.dataset.lstmScore)}">${this.formatScore(row.dataset.lstmScore)}</div>
+                            </div>
+                            <div class="detail-box">
+                                <div class="detail-k">Command Score</div>
+                                <div class="detail-v ${this.getScoreClass(row.dataset.commandScore)}">${this.formatScore(row.dataset.commandScore)}</div>
+                            </div>
+                            <div class="detail-box">
+                                <div class="detail-k">CICIoT Score</div>
+                                <div class="detail-v ${this.getScoreClass(row.dataset.ciciotScore)}">${this.formatScore(row.dataset.ciciotScore)}</div>
+                            </div>
+
+                            <div class="detail-box">
+                                <div class="detail-k">Event Type</div>
+                                <div class="detail-v">${this.escapeHtml(eventType)}</div>
+                            </div>
+                            <div class="detail-box">
+                                <div class="detail-k">Source IP</div>
+                                <div class="detail-v mono">${this.escapeHtml(sourceIp)}</div>
+                            </div>
+                            <div class="detail-box">
+                                <div class="detail-k">Severity</div>
+                                <div class="detail-v">${this.escapeHtml(severity)}</div>
+                            </div>
+                            <div class="detail-box">
+                                <div class="detail-k">Decision Source</div>
+                                <div class="detail-v">${this.escapeHtml(source)}</div>
+                            </div>
+
+                            <div class="detail-box">
+                                <div class="detail-k">Attack Class</div>
+                                <div class="detail-v">${this.escapeHtml(attackClass)}</div>
+                            </div>
+                            <div class="detail-box">
+                                <div class="detail-k">LSTM Session</div>
+                                <div class="detail-v">${this.escapeHtml(lstmSession)}</div>
+                            </div>
+                            <div class="detail-box">
+                                <div class="detail-k">CICIoT Attack</div>
+                                <div class="detail-v">${this.escapeHtml(ciciotAttack)}</div>
+                            </div>
+                            <div class="detail-box">
+                                <div class="detail-k">CICIoT Confidence</div>
+                                <div class="detail-v">${this.formatScore(row.dataset.ciciotConfidence)}</div>
+                            </div>
+
+                            <div class="detail-box">
+                                <div class="detail-k">Base Severity</div>
+                                <div class="detail-v">${this.escapeHtml(String(row.dataset.baseSeverity || 'LOW').toUpperCase())}</div>
+                            </div>
+                            <div class="detail-box">
+                                <div class="detail-k">Floor Severity</div>
+                                <div class="detail-v">${this.escapeHtml(String(row.dataset.floorSeverity || 'LOW').toUpperCase())}</div>
+                            </div>
+                            <div class="detail-box">
+                                <div class="detail-k">Policy Escalated</div>
+                                <div class="detail-v">${this.escapeHtml(policyEscalated)}</div>
+                            </div>
+                            <div class="detail-box">
+                                <div class="detail-k">Action Taken</div>
+                                <div class="detail-v">${this.escapeHtml(actionTaken)}</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-command">
+                            <div class="detail-k">Command / Activity</div>
+                            <pre>${this.escapeHtml(command)}</pre>
+                        </div>
+                    </div>
+                `;
+            }
+
+            toggleDetailsRow(row, button) {
+                if (!row) return;
+
+                const next = row.nextElementSibling;
+                const isOpen = next && next.classList.contains('details-row');
+
+                if (isOpen) {
+                    next.remove();
+                    button.innerHTML = `<i class="fas fa-chevron-down"></i>`;
+                    return;
+                }
+
+                const detailsRow = document.createElement('tr');
+                detailsRow.className = 'details-row';
+
+                const detailsCell = document.createElement('td');
+                detailsCell.colSpan = 9;
+                detailsCell.innerHTML = this.buildDetailsHtml(row);
+
+                detailsRow.appendChild(detailsCell);
+                row.insertAdjacentElement('afterend', detailsRow);
+                button.innerHTML = `<i class="fas fa-chevron-up"></i>`;
+            }
+
+            applyScoreClassToRow(row) {
+                if (!row || row.classList.contains('details-row')) return;
+                const threatCell = row.cells[4];
+                if (threatCell) {
+                    threatCell.className = `score ${this.getScoreClass(row.dataset.threatScore)}`;
+                }
+            }
+
+            addEventRow(event) {
                 const tbody = document.getElementById('events-tbody');
-                const row = tbody.insertRow(0);
+                if (!tbody) return;
+
+                const row = document.createElement('tr');
                 row.classList.add('new-row');
 
-                const eventType = (event.type || event.event_type || 'web').toLowerCase();
-                const sourceIp = event.ip || event.source_ip || '-';
-                const command = event.cmd || event.command || '-';
-                const attackClass = (event.attack_class || 'normal').toLowerCase();
-                const severity = (event.severity || 'low').toLowerCase();
-                const formattedTime = event.timestamp_formatted || this.formatISTTime(event.timestamp || event.time);
+                const time = event.timestamp_formatted || this.formatTimeNow();
+                const ip = event.source_ip || event.ip || '-';
+                const eventType = String(event.event_type || 'ssh').toLowerCase();
+                const command = event.command || '-';
+                const severity = String(event.severity || 'LOW').toUpperCase();
+                const source = String(event.decision_source || 'rules').toLowerCase();
+                const attackClass = event.attack_class || 'normal';
+                const ciciotAttack = event.ciciot_attack || 'Normal';
+                const threatScore = this.num(event.threat_score, 0);
+                const lstmScore = this.num(event.lstm_score, 0);
+                const ciciotScore = this.num(event.ciciot_score, 0);
+                const commandScore = this.num(event.command_score, 0);
+                const policyEscalated = Boolean(event.policy_escalated);
 
-                row.insertCell(0).textContent = formattedTime;
-                const ipCell = row.insertCell(1);
-                ipCell.innerHTML = `<span class="ip">${sourceIp}</span>`;
+                row.dataset.eventType = eventType;
+                row.dataset.severity = severity;
+                row.dataset.threatScore = threatScore;
+                row.dataset.lstmScore = lstmScore;
+                row.dataset.commandScore = commandScore;
+                row.dataset.ciciotScore = ciciotScore;
+                row.dataset.ciciotAttack = ciciotAttack;
+                row.dataset.source = source;
+                row.dataset.policyEscalated = policyEscalated ? 'true' : 'false';
+                row.dataset.sourceIp = ip;
+                row.dataset.command = command;
+                row.dataset.attackClass = attackClass;
+                row.dataset.actionTaken = event.action_taken || 'logged';
+                row.dataset.lstmSession = event.lstm_session || 'Unknown';
+                row.dataset.ciciotConfidence = this.num(event.ciciot_confidence, 0);
+                row.dataset.baseSeverity = event.base_severity || 'LOW';
+                row.dataset.floorSeverity = event.floor_severity || 'LOW';
+                row.dataset.timestamp = time;
 
-                const typeCell = row.insertCell(2);
-                const typeBadge = document.createElement('span');
-                typeBadge.className = `type-badge ${eventType === 'ssh' ? 'ssh' : 'web'}`;
-                typeBadge.textContent = eventType.toUpperCase();
-                typeCell.appendChild(typeBadge);
+                row.innerHTML = `
+                    <td class="mono">${this.escapeHtml(time)}</td>
+                    <td class="mono">${this.escapeHtml(ip)}</td>
+                    <td>${this.escapeHtml(eventType.toUpperCase())}</td>
+                    <td class="command mono" title="${this.escapeHtml(command)}">${this.escapeHtml(command)}</td>
+                    <td class="score ${this.getScoreClass(threatScore)}">${this.formatScore(threatScore)}</td>
+                    <td><span class="badge ${this.sevClass(severity)}">${this.escapeHtml(severity)}</span></td>
+                    <td><span class="${this.attackClass(attackClass)}">${this.escapeHtml(attackClass)}</span></td>
+                    <td><span class="${this.sourceClass(source)}">${this.escapeHtml(source.toUpperCase())}</span></td>
+                    <td>
+                        <div class="row-actions">
+                            <button class="icon-btn detail-toggle-btn" type="button" title="View details">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
 
-                const cmdCell = row.insertCell(3);
-                cmdCell.className = 'cmd-cell';
-                cmdCell.textContent = command;
-                cmdCell.title = command;
+                tbody.prepend(row);
 
-                const attackCell = row.insertCell(4);
-                const attackBadge = document.createElement('span');
-                attackBadge.className = `attack-class ${attackClass}`;
-                attackBadge.textContent = this.titleCase(attackClass);
-                attackCell.appendChild(attackBadge);
+                const toggleBtn = row.querySelector('.detail-toggle-btn');
+                toggleBtn?.addEventListener('click', () => {
+                    this.toggleDetailsRow(row, toggleBtn);
+                });
 
-                const severityCell = row.insertCell(5);
-                const severityBadge = document.createElement('span');
-                severityBadge.className = `severity ${severity}`;
-                severityBadge.textContent = severity.toUpperCase();
-                severityCell.appendChild(severityBadge);
-
-                if (tbody.rows.length > 50) {
-                    tbody.deleteRow(50);
+                const eventRows = Array.from(tbody.querySelectorAll('tr:not(.details-row)'));
+                while (eventRows.length > this.maxRows) {
+                    const lastEventRow = eventRows[eventRows.length - 1];
+                    const maybeDetails = lastEventRow.nextElementSibling;
+                    if (maybeDetails && maybeDetails.classList.contains('details-row')) {
+                        maybeDetails.remove();
+                    }
+                    lastEventRow.remove();
+                    eventRows.pop();
                 }
 
-                this.updateStats();
-                setTimeout(() => row.classList.remove('new-row'), 2000);
+                setTimeout(() => row.classList.remove('new-row'), 1500);
+                this.refreshVisibleStats();
             }
 
-            updateStats() {
-                const totalEl = document.getElementById('stat-total');
-                const sshEl = document.getElementById('stat-ssh');
-                const webEl = document.getElementById('stat-web');
-                const highEl = document.getElementById('stat-high');
-                const liveCountEl = document.getElementById('live-count');
-                const totalEventsEl = document.getElementById('total-events');
+            renderBadActors() {
+                const tbody = document.getElementById('bad-actors-tbody');
+                if (!tbody) return;
 
-                // Update from DOM (simplified)
-                const total = document.querySelectorAll('#events-tbody tr').length;
-                liveCountEl.textContent = total;
-                totalEventsEl.innerHTML = `<i class="fas fa-bolt"></i> ${total} Events`;
+                const actors = Array.from(this.globalBadActors.values())
+                    .sort((a, b) => this.num(b.maxThreat) - this.num(a.maxThreat));
 
-                // High severity count
-                const highCount = document.querySelectorAll('.severity.high').length;
-                highEl.textContent = highCount;
+                const actorCount = actors.length;
+                this.setText('summary-tracked-actors', actorCount);
+                this.setText('bad-actors-badge-count', actorCount);
+                this.setText('kpi-tracked-actors', actorCount);
+
+                if (actors.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="empty-cell">No tracked actors yet</td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tbody.innerHTML = actors.map(actor => `
+                    <tr>
+                        <td><span class="mono">${this.escapeHtml(actor.ip)}</span></td>
+                        <td class="score ${this.getScoreClass(actor.maxThreat)}">${this.formatScore(actor.maxThreat)}</td>
+                        <td>${this.escapeHtml(this.num(actor.highAlerts, 0))}</td>
+                        <td><span class="${this.attackClass(actor.lastAttack)}">${this.escapeHtml(actor.lastAttack || 'normal')}</span></td>
+                        <td><span class="badge ${this.sevClass(actor.latestSeverity)}">${this.escapeHtml(String(actor.latestSeverity || 'LOW').toUpperCase())}</span></td>
+                        <td><span class="${this.enforcementClass(actor.enforcement)}">${this.escapeHtml(actor.enforcement || 'monitor')}</span></td>
+                    </tr>
+                `).join('');
             }
 
-            async updateBadActorsStats() {
+            setText(id, value) {
+                const el = document.getElementById(id);
+                if (el) el.textContent = String(value);
+            }
+
+            setFormattedThreat(id, value) {
+                const el = document.getElementById(id);
+                if (el) el.textContent = this.num(value, 0).toFixed(3);
+            }
+
+            refreshVisibleStats() {
+                const rows = Array.from(document.querySelectorAll('#events-tbody > tr:not(.details-row)'));
+
+                let visibleTotal = rows.length;
+                let visibleSsh = 0;
+                let visibleWeb = 0;
+                let visibleHigh = 0;
+                let avgThreatSum = 0;
+
+                rows.forEach((row) => {
+                    const eventType = String(row.dataset.eventType || 'ssh').toLowerCase();
+                    const severity = String(row.dataset.severity || 'LOW').toUpperCase();
+                    const threat = this.num(row.dataset.threatScore, 0);
+
+                    if (eventType === 'web') {
+                        visibleWeb += 1;
+                    } else {
+                        visibleSsh += 1;
+                    }
+
+                    if (severity === 'HIGH') {
+                        visibleHigh += 1;
+                    }
+
+                    avgThreatSum += threat;
+                    this.applyScoreClassToRow(row);
+                });
+
+                const avgThreat = visibleTotal > 0 ? (avgThreatSum / visibleTotal) : 0;
+
+                this.setText('summary-visible-rows', visibleTotal);
+                this.setText('summary-visible-high', visibleHigh);
+                this.setText('live-count', visibleTotal);
+                this.setFormattedThreat('summary-visible-avg-threat', avgThreat);
+
+                this.setText('kpi-total-events', visibleTotal);
+                this.setText('kpi-ssh-events', visibleSsh);
+                this.setText('kpi-web-events', visibleWeb);
+                this.setText('kpi-high-severity', visibleHigh);
+                this.setFormattedThreat('kpi-average-threat', avgThreat);
+            }
+
+            async fetchGlobalStats() {
                 try {
-                    const response = await fetch('/model-info');
+                    const response = await fetch('/stats', { cache: 'no-store' });
                     const data = await response.json();
-                    const badActorsCount = data.bad_actors_count || 0;
-                    document.getElementById('stat-bad-actors').textContent = badActorsCount;
-                    document.getElementById('bad-actors-count').innerHTML = 
-                        `<i class="fas fa-skull-crossbones"></i> ${badActorsCount} Bad Actors`;
-                    document.getElementById('bad-actors-live-count').textContent = badActorsCount;
-                } catch (e) {
-                    console.error('Bad actors stats error:', e);
+
+                    const badActorsCount = this.getFirstNumber(data, ['bad_actors_count', 'tracked_actors', 'actors_count']);
+                    const policyEscalations = this.getFirstNumber(data, ['policy_escalations']);
+                    const ciciotHits = this.getFirstNumber(data, ['ciciot_attack_count']);
+
+                    this.setText('summary-global-policy-escalations', policyEscalations);
+                    this.setText('summary-global-ciciot-attacks', ciciotHits);
+                    this.setText('summary-tracked-actors', badActorsCount);
+                    this.setText('kpi-tracked-actors', badActorsCount);
+                    this.setText('bad-actors-badge-count', badActorsCount);
+
+                    this.globalBadActors.clear();
+
+                    const actors = data.bad_actors || {};
+                    Object.entries(actors).forEach(([ip, actor]) => {
+                        this.globalBadActors.set(ip, {
+                            ip,
+                            maxThreat: this.getFirstNumber(actor, ['max_threat_score', 'max_threat', 'threat_score']),
+                            highAlerts: this.getFirstNumber(actor, ['high_alerts', 'alerts', 'high_count']),
+                            latestSeverity: String(actor.latest_severity || actor.severity || 'LOW').toUpperCase(),
+                            lastAttack: actor.last_attack || actor.attack_class || 'normal',
+                            enforcement: actor.enforcement || actor.action_taken || 'monitor'
+                        });
+                    });
+
+                    this.renderBadActors();
+                } catch (err) {
+                    console.error('Stats fetch failed:', err);
                 }
+            }
+
+            showAlert(event) {
+                const overlay = document.getElementById('alert-overlay');
+                if (!overlay) return;
+
+                document.getElementById('alert-ip').textContent = event.source_ip || event.ip || '-';
+                document.getElementById('alert-severity').textContent = String(event.severity || 'HIGH').toUpperCase();
+                document.getElementById('alert-score').textContent = this.formatScore(event.threat_score);
+                document.getElementById('alert-source').textContent = String(event.decision_source || 'rules').toUpperCase();
+                document.getElementById('alert-attack-class').textContent = event.attack_class || 'normal';
+                document.getElementById('alert-action').textContent = event.action_taken || 'alerted';
+                document.getElementById('alert-lstm-score').textContent = this.formatScore(event.lstm_score);
+                document.getElementById('alert-command-score').textContent = this.formatScore(event.command_score);
+                document.getElementById('alert-ciciot-score').textContent = this.formatScore(event.ciciot_score);
+                document.getElementById('alert-ciciot-attack').textContent = event.ciciot_attack || 'None';
+                document.getElementById('alert-command').textContent = event.command || '-';
+
+                overlay.style.display = 'flex';
+            }
+
+            hideAlert() {
+                const overlay = document.getElementById('alert-overlay');
+                if (overlay) overlay.style.display = 'none';
             }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            window.dashboard = new Phase10Dashboard();
-            // Refresh bad actors every 30s
-            setInterval(() => window.dashboard.updateBadActorsStats(), 30000);
+            window.dashboard = new HoneypotDashboard();
         });
     </script>
 </body>
