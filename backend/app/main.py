@@ -21,7 +21,7 @@ from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Tuple
 from collections import defaultdict, deque
 import json
 import pickle
@@ -62,6 +62,14 @@ engine = create_engine(
     connect_args={"check_same_thread": False},
 )
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+
+# =========================
+# Model-first decision tuning
+# =========================
+LSTM_HIGH_CONFIDENCE = 0.75
+LSTM_MEDIUM_CONFIDENCE = 0.40
+CICIOT_HIGH_CONFIDENCE = 0.80
+CICIOT_MEDIUM_CONFIDENCE = 0.60
 
 
 # =========================
@@ -245,7 +253,7 @@ def normalize_attack_label(raw_label: Optional[str]) -> Optional[str]:
     if not label:
         return None
 
-    benign_terms = {"benign", "normal", "harmless", "none", "unknown"}
+    benign_terms = {"benign", "normal", "harmless", "none", "unknown", "unavailable", "fallback"}
     if label in benign_terms:
         return "normal"
 
@@ -267,7 +275,15 @@ def normalize_attack_label(raw_label: Optional[str]) -> Optional[str]:
     if any(term in label for term in brute_terms):
         return "credential_attack"
 
-    exploit_terms = ["exploit", "malware", "backdoor", "rce", "injection", "shell", "payload"]
+    privilege_terms = ["privilege", "sudo", "su", "root escalation", "escalation", "privilege_abuse"]
+    if any(term in label for term in privilege_terms):
+        return "privilege_abuse"
+
+    destructive_terms = ["destructive", "wiper", "rm -rf", "shred", "mkfs"]
+    if any(term in label for term in destructive_terms):
+        return "destructive_activity"
+
+    exploit_terms = ["exploit", "malware", "backdoor", "rce", "injection", "shell", "payload", "exploitation"]
     if any(term in label for term in exploit_terms):
         return "exploitation"
 
@@ -281,7 +297,7 @@ def normalize_attack_label(raw_label: Optional[str]) -> Optional[str]:
     return label.replace(" ", "_")
 
 
-def classify_ssh_attack(command: str, lstm_session: Optional[str] = None) -> str:
+def classify_ssh_attack_fallback(command: str, lstm_session: Optional[str] = None) -> str:
     cmd = (command or "").lower()
     lstm_label = (lstm_session or "").lower()
 
@@ -321,17 +337,19 @@ def classify_ssh_attack(command: str, lstm_session: Optional[str] = None) -> str
     if any(token in cmd for token in recon_tokens):
         return "reconnaissance"
 
-    if any(term in lstm_label for term in ["malware", "exploit", "shell", "payload", "backdoor"]):
+    if any(term in lstm_label for term in ["malware", "exploit", "shell", "payload", "backdoor", "exploitation"]):
         return "exploitation"
     if any(term in lstm_label for term in ["bruteforce", "credential"]):
         return "credential_attack"
-    if any(term in lstm_label for term in ["scan", "recon", "enumeration"]):
+    if any(term in lstm_label for term in ["scan", "recon", "enumeration", "reconnaissance"]):
         return "reconnaissance"
+    if any(term in lstm_label for term in ["privilege", "sudo", "escalation", "privilege_abuse"]):
+        return "privilege_abuse"
 
     return "normal"
 
 
-def classify_web_attack(activity: str) -> str:
+def classify_web_attack_fallback(activity: str) -> str:
     text = (activity or "").lower()
 
     if not text.strip():
@@ -378,56 +396,6 @@ def classify_web_attack(activity: str) -> str:
         return "reconnaissance"
     if text.startswith("post /login") or text.startswith("post /signin"):
         return "credential_attack"
-
-    return "normal"
-
-
-def resolve_attack_class(
-    *,
-    event_type: str,
-    raw_text: str,
-    lstm_session: Optional[str],
-    ciciot_attack: Optional[str],
-    ciciot_score: float,
-    command_score: float,
-    threat_score: float,
-) -> str:
-    normalized_type = normalize_event_type(event_type)
-    normalized_ciciot = normalize_attack_label(ciciot_attack)
-
-    if normalized_type == "ssh":
-        ssh_label = classify_ssh_attack(raw_text, lstm_session=lstm_session)
-        if ssh_label != "normal":
-            return ssh_label
-
-        if normalized_ciciot in {"credential_attack", "exploitation", "reconnaissance", "botnet_activity"}:
-            return normalized_ciciot
-
-        if normalized_ciciot == "ddos":
-            if ciciot_score >= 0.92 and threat_score >= 0.80:
-                return "ddos"
-
-        return "normal"
-
-    web_label = classify_web_attack(raw_text)
-    if web_label != "normal":
-        return web_label
-
-    if normalized_ciciot == "ddos":
-        ddos_hints = [
-            "flood", "traffic spike", "packet storm", "syn", "udp", "icmp",
-            "too many requests", "rate limit", "volumetric"
-        ]
-        raw_lower = (raw_text or "").lower()
-        if any(h in raw_lower for h in ddos_hints) or ciciot_score >= 0.90:
-            return "ddos"
-        return "web_attack" if threat_score >= 0.50 else "normal"
-
-    if normalized_ciciot in {"reconnaissance", "credential_attack", "web_attack", "exploitation", "botnet_activity"}:
-        return normalized_ciciot
-
-    if command_score >= 0.65 or threat_score >= 0.60:
-        return "web_attack"
 
     return "normal"
 
@@ -507,7 +475,11 @@ def score_command_risk(command: str) -> float:
     return round(clamp01(score), 4)
 
 
-def floor_severity_from_command(command: str, event_type: str = "ssh") -> str:
+def emergency_override_severity(command: str, event_type: str = "ssh") -> str:
+    """
+    Keep only a very small hard override list for truly dangerous payloads.
+    Everything else should be score/model driven.
+    """
     cmd = (command or "").strip().lower()
     normalized_type = normalize_event_type(event_type)
 
@@ -515,98 +487,43 @@ def floor_severity_from_command(command: str, event_type: str = "ssh") -> str:
         return "LOW"
 
     if normalized_type == "web":
-        forced_high_patterns = [
-            "sql injection" in cmd,
-            "command injection" in cmd,
-            "shellshock" in cmd,
-            "${jndi" in cmd,
-            "jndi:" in cmd,
-            "<script" in cmd and "admin" in cmd,
-            "webshell" in cmd,
-            "shell.php" in cmd,
-            "cmd.php" in cmd,
-            "../" in cmd and "/etc/passwd" in cmd,
+        critical_web = [
+            "shellshock",
+            "${jndi",
+            "jndi:",
+            "webshell",
+            "shell.php",
+            "cmd.php",
+            "command injection",
         ]
-        if any(forced_high_patterns):
+        if any(token in cmd for token in critical_web):
             return "HIGH"
-
-        forced_medium_patterns = [
-            "get /admin" in cmd,
-            "get /phpmyadmin" in cmd,
-            "get /wp-admin" in cmd,
-            "post /login" in cmd,
-            "wp-login" in cmd,
-            "scan attempt" in cmd,
-            "nikto" in cmd,
-            "gobuster" in cmd,
-            "ffuf" in cmd,
-            "union select" in cmd,
-            "<script" in cmd,
-            "../" in cmd,
-        ]
-        if any(forced_medium_patterns):
-            return "MEDIUM"
-
-        score = score_command_risk(command)
-        if score >= 0.85:
-            return "HIGH"
-        if score >= 0.55:
-            return "MEDIUM"
         return "LOW"
 
-    forced_high_patterns = [
+    critical_ssh = [
+        "nc -e",
+        "/bin/bash -i",
+        "bash -i",
+        "reverse shell",
+        "rm -rf",
+        "mkfs",
+        "dd if=",
+        "cat /etc/shadow",
+    ]
+
+    if any(token in cmd for token in critical_ssh):
+        return "HIGH"
+
+    if (
         ("wget " in cmd or "curl " in cmd or "http://" in cmd or "https://" in cmd)
         and "chmod +x" in cmd
-        and "./" in cmd,
-
-        "| bash" in cmd,
-        "| sh" in cmd,
-
-        "nc -e" in cmd,
-        "/bin/bash -i" in cmd,
-        "bash -i" in cmd,
-        "python -c" in cmd,
-        "perl -e" in cmd,
-
-        "rm -rf" in cmd,
-        "mkfs" in cmd,
-        "dd if=" in cmd,
-        "cat /etc/shadow" in cmd,
-        "reverse shell" in cmd,
-        "command injection" in cmd,
-    ]
-
-    if any(forced_high_patterns):
+        and "./" in cmd
+    ):
         return "HIGH"
 
-    forced_medium_patterns = [
-        "nmap" in cmd,
-        "masscan" in cmd,
-        "hydra" in cmd,
-        "sqlmap" in cmd,
-        "nikto" in cmd,
-        "enum4linux" in cmd,
-        "wget " in cmd,
-        "curl " in cmd,
-        "sudo" in cmd,
-        "crontab" in cmd,
-        "systemctl" in cmd,
-        "scan" in cmd,
-        "recon" in cmd,
-        "wp-login" in cmd,
-        "../" in cmd,
-        "union select" in cmd,
-        "<script" in cmd,
-    ]
-
-    if any(forced_medium_patterns):
-        return "MEDIUM"
-
-    score = score_command_risk(command)
-    if score >= 0.85:
+    if "| bash" in cmd or "| sh" in cmd:
         return "HIGH"
-    if score >= 0.55:
-        return "MEDIUM"
+
     return "LOW"
 
 
@@ -798,7 +715,7 @@ async def lifespan(app_: FastAPI):
     lstm_label_encoder = None
     app_state["lstm_info"] = {}
 
-    lstm_model_path = Path("app/lstm_ssh_v8.keras")
+    lstm_model_path = Path("app/lstm_ssh_v9.keras")
     lstm_tokenizer_path = Path("app/lstm_tokenizer.pkl")
     lstm_encoder_path = Path("app/lstm_label_encoder.pkl")
     lstm_metadata_path = Path("app/lstm_metadata.json")
@@ -813,11 +730,13 @@ async def lifespan(app_: FastAPI):
 
             lstm_meta = load_json_if_exists(lstm_metadata_path)
             app_state["lstm_info"] = {
-                "version": lstm_meta.get("version", "LSTM v8.1"),
-                "accuracy": float(lstm_meta.get("accuracy", 0.979)),
-                "trained_samples": int(lstm_meta.get("trained_samples", 233000)),
-                "classes": int(lstm_meta.get("classes", 9)),
-                "max_sequence_length": int(lstm_meta.get("max_sequence_length", 100)),
+                "version": lstm_meta.get("version", "LSTM v9"),
+                "accuracy": float(lstm_meta.get("accuracy", 0.0)),
+                "trained_samples": int(lstm_meta.get("sessions", lstm_meta.get("trained_samples", 0))),
+                "classes": int(lstm_meta.get("classes", 0)),
+                "max_sequence_length": int(lstm_meta.get("max_len", lstm_meta.get("max_sequence_length", 50))),
+                "max_len": int(lstm_meta.get("max_len", 50)),
+                "class_names": list(lstm_meta.get("class_names", [])),
                 "status": "loaded",
                 "type": "ssh_sequence_lstm",
             }
@@ -837,7 +756,7 @@ async def lifespan(app_: FastAPI):
             "type": "ssh_sequence_lstm",
         }
 
-    app_state["hybrid_info"] = "LSTM + CICIoT + Command-Risk Hybrid Decision Engine Active"
+    app_state["hybrid_info"] = "Model-dominant hybrid engine active: LSTM + CICIoT + fallback command-risk"
     print("Honeypot backend ready")
 
     yield
@@ -954,8 +873,11 @@ def map_lstm_label_to_score(label: str, prob: float) -> float:
     label_lower = (label or "").lower()
 
     benign_terms = ["benign", "normal", "harmless"]
-    medium_terms = ["scan", "recon", "suspicious", "enumeration"]
-    high_terms = ["malware", "payload", "exploit", "shell", "bruteforce", "backdoor", "attack"]
+    medium_terms = ["scan", "recon", "reconnaissance", "suspicious", "enumeration"]
+    high_terms = [
+        "malware", "payload", "exploit", "exploitation", "shell",
+        "bruteforce", "backdoor", "attack", "privilege", "abuse"
+    ]
 
     if any(term in label_lower for term in benign_terms):
         return 0.05 * max(prob, 0.5)
@@ -975,15 +897,21 @@ def predict_lstm_from_session(session_id: str, command: str) -> Dict[str, Any]:
         return {
             "lstm_session": "Unavailable",
             "session_length": len(sequence),
-            "lstm_score": round(score_command_risk(command) * 0.5, 4),
+            "lstm_score": round(score_command_risk(command) * 0.35, 4),
             "lstm_confidence": 0.0,
         }
 
-    joined = " ; ".join(sequence)
+    joined = " ; ".join(sequence).lower().strip()
     try:
         seq = lstm_tokenizer.texts_to_sequences([joined])
-        max_len = int(app_state.get("lstm_info", {}).get("max_sequence_length", 100))
-        padded = keras.preprocessing.sequence.pad_sequences(seq, maxlen=max_len, padding="post")
+        lstm_cfg = app_state.get("lstm_info", {})
+        max_len = int(lstm_cfg.get("max_sequence_length") or lstm_cfg.get("max_len", 50))
+        padded = keras.preprocessing.sequence.pad_sequences(
+            seq,
+            maxlen=max_len,
+            padding="post",
+            truncating="post",
+        )
         preds = lstm_model.predict(padded, verbose=0)[0]
 
         pred_idx = int(np.argmax(preds))
@@ -1001,9 +929,70 @@ def predict_lstm_from_session(session_id: str, command: str) -> Dict[str, Any]:
         return {
             "lstm_session": "Fallback",
             "session_length": len(sequence),
-            "lstm_score": round(score_command_risk(command) * 0.5, 4),
+            "lstm_score": round(score_command_risk(command) * 0.35, 4),
             "lstm_confidence": 0.0,
         }
+
+
+def pick_model_first_attack_class(
+    *,
+    event_type: str,
+    raw_text: str,
+    lstm_session: Optional[str],
+    lstm_confidence: float,
+    ciciot_attack: Optional[str],
+    ciciot_confidence: float,
+    ciciot_score: float,
+    command_score: float,
+    threat_score: float,
+) -> Tuple[str, str]:
+    """
+    Returns: (attack_class, source)
+    source in {"lstm", "ciciot", "hybrid", "fallback_rule"}
+    """
+    normalized_type = normalize_event_type(event_type)
+    normalized_lstm = normalize_attack_label(lstm_session)
+    normalized_ciciot = normalize_attack_label(ciciot_attack)
+
+    # SSH: trust LSTM first when confidence is solid
+    if normalized_type == "ssh":
+        if normalized_lstm and normalized_lstm != "normal" and lstm_confidence >= LSTM_HIGH_CONFIDENCE:
+            return normalized_lstm, "lstm"
+
+        if normalized_ciciot and normalized_ciciot != "normal" and ciciot_confidence >= CICIOT_HIGH_CONFIDENCE:
+            return normalized_ciciot, "ciciot"
+
+        if (
+            normalized_lstm
+            and normalized_lstm != "normal"
+            and lstm_confidence >= LSTM_MEDIUM_CONFIDENCE
+            and threat_score >= 0.45
+        ):
+            return normalized_lstm, "hybrid"
+
+        if (
+            normalized_ciciot
+            and normalized_ciciot != "normal"
+            and ciciot_confidence >= CICIOT_MEDIUM_CONFIDENCE
+            and ciciot_score >= 0.55
+        ):
+            return normalized_ciciot, "hybrid"
+
+        fallback = classify_ssh_attack_fallback(raw_text, lstm_session=lstm_session)
+        return fallback, "fallback_rule"
+
+    # WEB/NETWORK: trust CICIoT first when confidence is solid
+    if normalized_ciciot and normalized_ciciot != "normal" and ciciot_confidence >= CICIOT_HIGH_CONFIDENCE:
+        return normalized_ciciot, "ciciot"
+
+    if normalized_ciciot and normalized_ciciot != "normal" and ciciot_confidence >= CICIOT_MEDIUM_CONFIDENCE:
+        return normalized_ciciot, "hybrid"
+
+    if normalized_lstm and normalized_lstm != "normal" and lstm_confidence >= LSTM_HIGH_CONFIDENCE and threat_score >= 0.60:
+        return normalized_lstm, "lstm"
+
+    fallback = classify_web_attack_fallback(raw_text)
+    return fallback, "fallback_rule"
 
 
 def fuse_hybrid_decision(
@@ -1013,9 +1002,9 @@ def fuse_hybrid_decision(
     ciciot_features: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     normalized_type = normalize_event_type(event_type)
+
     lstm_result = predict_lstm_from_session(session_id=session_id, command=command)
     command_score = round(score_command_risk(command), 4)
-    floor_severity = floor_severity_from_command(command, event_type=normalized_type)
 
     ciciot_result = {
         "ciciot_attack": None,
@@ -1031,50 +1020,62 @@ def fuse_hybrid_decision(
             pass
 
     lstm_score = float(lstm_result["lstm_score"])
+    lstm_confidence = float(lstm_result.get("lstm_confidence", 0.0))
     ciciot_score = float(ciciot_result["ciciot_score"])
+    ciciot_confidence = float(ciciot_result.get("ciciot_confidence", 0.0))
 
-    if normalized_type == "web":
+    # Model-dominant weights
+    if normalized_type == "ssh":
         if ciciot_features:
-            threat_score = 0.45 * command_score + 0.20 * lstm_score + 0.35 * ciciot_score
+            threat_score = (0.50 * lstm_score) + (0.35 * ciciot_score) + (0.15 * command_score)
         else:
-            threat_score = 0.70 * command_score + 0.30 * lstm_score
+            threat_score = (0.75 * lstm_score) + (0.25 * command_score)
     else:
         if ciciot_features:
-            threat_score = 0.40 * command_score + 0.30 * lstm_score + 0.30 * ciciot_score
+            threat_score = (0.65 * ciciot_score) + (0.20 * command_score) + (0.15 * lstm_score)
         else:
-            threat_score = 0.55 * command_score + 0.45 * lstm_score
+            threat_score = (0.45 * lstm_score) + (0.55 * command_score)
 
     threat_score = round(clamp01(threat_score), 4)
 
-    base_severity = severity_from_score(threat_score)
-    final_severity = max_severity(base_severity, floor_severity)
-    policy_escalated = final_severity != base_severity
-
-    attack_class = resolve_attack_class(
+    attack_class, class_source = pick_model_first_attack_class(
         event_type=normalized_type,
         raw_text=command,
         lstm_session=lstm_result.get("lstm_session"),
+        lstm_confidence=lstm_confidence,
         ciciot_attack=ciciot_result.get("ciciot_attack"),
+        ciciot_confidence=ciciot_confidence,
         ciciot_score=ciciot_score,
         command_score=command_score,
         threat_score=threat_score,
     )
 
-    if ciciot_features and ciciot_score >= max(command_score, lstm_score):
-        decision_source = "hybrid"
-    elif lstm_score >= command_score:
-        decision_source = "lstm"
-    else:
-        decision_source = "command"
+    base_severity = severity_from_score(threat_score)
 
+    emergency_floor = emergency_override_severity(command, event_type=normalized_type)
+    final_severity = max_severity(base_severity, emergency_floor)
+    policy_escalated = final_severity != base_severity
+
+    decision_source = class_source
+    if class_source == "fallback_rule":
+        if (
+            normalized_type == "ssh"
+            and lstm_confidence >= LSTM_MEDIUM_CONFIDENCE
+            and normalize_attack_label(lstm_result.get("lstm_session")) not in {None, "normal"}
+        ):
+            decision_source = "hybrid"
+        elif ciciot_score > 0.0 and ciciot_confidence >= CICIOT_MEDIUM_CONFIDENCE:
+            decision_source = "hybrid"
+        else:
+            decision_source = "command"
     return {
         "severity": final_severity,
         "threat_score": threat_score,
         "attack_class": attack_class,
         "decision_source": decision_source,
-        "fusion_method": "hybrid_lstm_ciciot_command",
+        "fusion_method": "model_first_hybrid_lstm_ciciot_command_fallback",
         "base_severity": base_severity,
-        "floor_severity": floor_severity,
+        "floor_severity": emergency_floor,
         "policy_escalated": policy_escalated,
         "command_score": command_score,
         **lstm_result,
@@ -1295,14 +1296,63 @@ def predict_ciciot_route(payload: CICIoTRequest):
 
 @app.post("/predict_lstm")
 def predict_lstm_route(payload: LSTMPredictRequest):
-    return predict_lstm_from_session(payload.session_id, payload.command)
+    model_session_id = build_model_session_id("ssh", payload.session_id)
+    return predict_lstm_from_session(model_session_id, payload.command)
+
+
+@app.post("/debug_lstm")
+def debug_lstm_route(payload: LSTMPredictRequest):
+    model_session_id = build_model_session_id("ssh", payload.session_id)
+    session_commands[model_session_id].append(payload.command)
+    sequence = session_commands[model_session_id][-100:]
+    joined = " ; ".join(sequence).lower().strip()
+
+    if lstm_model is None or lstm_tokenizer is None or lstm_label_encoder is None:
+        return {
+            "status": "unavailable",
+            "reason": "LSTM artifacts not loaded",
+            "sequence": sequence,
+            "joined_text": joined,
+        }
+
+    seq = lstm_tokenizer.texts_to_sequences([joined])
+    lstm_cfg = app_state.get("lstm_info", {})
+    max_len = int(lstm_cfg.get("max_sequence_length") or lstm_cfg.get("max_len", 50))
+    padded = keras.preprocessing.sequence.pad_sequences(
+        seq,
+        maxlen=max_len,
+        padding="post",
+        truncating="post",
+    )
+    preds = lstm_model.predict(padded, verbose=0)[0]
+
+    top_indices = np.argsort(preds)[::-1][:5]
+    top_predictions = []
+    for idx in top_indices:
+        label = str(lstm_label_encoder.inverse_transform([int(idx)])[0])
+        top_predictions.append({
+            "label": label,
+            "probability": round(float(preds[int(idx)]), 6)
+        })
+
+    return {
+        "session_id": model_session_id,
+        "sequence": sequence,
+        "joined_text": joined,
+        "token_sequence": seq[0] if seq else [],
+        "nonzero_token_count": len(seq[0]) if seq else 0,
+        "top_predictions": top_predictions,
+        "predicted_label": top_predictions[0]["label"] if top_predictions else "unknown",
+        "predicted_probability": top_predictions[0]["probability"] if top_predictions else 0.0,
+    }
 
 
 @app.post("/predict_hybrid")
 def predict_hybrid_route(payload: HybridPredictRequest):
+    model_session_id = build_model_session_id(payload.event_type, payload.session_id)
     return fuse_hybrid_decision(
         command=payload.command,
-        session_id=payload.session_id,
+        session_id=model_session_id,
         event_type=payload.event_type,
         ciciot_features=payload.ciciot_features,
     )

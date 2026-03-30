@@ -1,0 +1,22 @@
+{
+  "version": "LSTM v9",
+  "accuracy": 0.9907739162445068,
+  "classes": 5,
+  "class_names": [
+    "exploitation",
+    "normal",
+    "other",
+    "privilege_abuse",
+    "reconnaissance"
+  ],
+  "sessions": 233035,
+  "max_words": 5000,
+  "max_len": 50,
+  "label_mapping": {
+    "Execution": "exploitation",
+    "Persistence": "privilege_abuse",
+    "Discovery": "reconnaissance",
+    "Harmless": "normal",
+    "fallback": "other"
+  }
+}

@@ -19,3 +19,10 @@ backend/untitled.*
 # Docker/VM
 cowrie-*/
 *.log
+
+# Additional cleanup (project polish)
+datasets/
+*.save
+*.rf_backup
+*_backup.json
+*.pkl
