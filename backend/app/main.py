@@ -298,45 +298,61 @@ def normalize_attack_label(raw_label: Optional[str]) -> Optional[str]:
 
 
 def classify_ssh_attack_fallback(command: str, lstm_session: Optional[str] = None) -> str:
-    cmd = (command or "").lower()
-    lstm_label = (lstm_session or "").lower()
+    cmd = (command or "").strip().lower()
 
-    if not cmd.strip():
+    if not cmd:
         return "normal"
 
-    recon_tokens = [
-        "nmap", "masscan", "nikto", "enum4linux", "sqlmap",
-        "scan", "recon", "netstat", "ss ", "ifconfig", "ip a",
-        "whois", "dig ", "nslookup"
+    # Treat very common shell commands as normal unless part of a stronger pattern
+    exact_benign = {
+        "ls", "pwd", "whoami", "id", "date", "clear", "history", "hostname", "uname"
+    }
+    benign_prefixes = [
+        "echo ",
+        "cd ",
+        "ls ",
     ]
-    credential_tokens = [
-        "hydra", "medusa", "patator", "john", "hashcat",
-        "cat /etc/shadow", "/etc/passwd"
-    ]
-    privilege_tokens = [
-        "sudo", "su ", "passwd", "useradd", "usermod", "chsh",
-        "systemctl", "service ", "crontab"
+
+    if cmd in exact_benign or any(cmd.startswith(prefix) for prefix in benign_prefixes):
+        return "normal"
+
+    destructive_tokens = [
+        "rm -rf", "mkfs", "dd if=", "truncate", "shred"
     ]
     exploit_tokens = [
         "wget ", "curl ", "chmod +x", "./", "| bash", "| sh",
         "bash -i", "/bin/bash -i", "python -c", "perl -e",
         "nc -e", "nohup", "reverse shell", "payload", "command injection"
     ]
-    destructive_tokens = [
-        "rm -rf", "mkfs", "dd if=", "truncate", "shred"
+    privilege_tokens = [
+        "sudo", "sudo su", "sudo -i", "su ", "passwd", "useradd", "usermod",
+        "chsh", "chpasswd", "visudo", "/etc/sudoers", "crontab", "systemctl",
+        "service ", "backdoor"
+    ]
+    credential_tokens = [
+        "hydra", "medusa", "patator", "john", "hashcat",
+        "cat /etc/shadow", "shadow", "credentials dump"
+    ]
+    recon_tokens = [
+        "nmap", "masscan", "nikto", "enum4linux", "sqlmap",
+        "scan", "recon", "netstat", "ss ", "ifconfig", "ip a",
+        "whois", "dig ", "nslookup", "hostname -i",
+        "lsb_release", "cat /etc/os-release", "ps aux", "ps -ef",
+        "cat /etc/passwd"
     ]
 
     if any(token in cmd for token in destructive_tokens):
         return "destructive_activity"
     if any(token in cmd for token in exploit_tokens):
         return "exploitation"
-    if any(token in cmd for token in credential_tokens):
-        return "credential_attack"
     if any(token in cmd for token in privilege_tokens):
         return "privilege_abuse"
+    if any(token in cmd for token in credential_tokens):
+        return "credential_attack"
     if any(token in cmd for token in recon_tokens):
         return "reconnaissance"
 
+    lstm_label = (lstm_session or "").lower()
     if any(term in lstm_label for term in ["malware", "exploit", "shell", "payload", "backdoor", "exploitation"]):
         return "exploitation"
     if any(term in lstm_label for term in ["bruteforce", "credential"]):
@@ -372,9 +388,24 @@ def classify_web_attack_fallback(activity: str) -> str:
         "dirb", "gobuster", "ffuf", "enumeration", "probe"
     ]
     injection_tokens = [
-        "union select", "' or 1=1", "\" or 1=1", "sql injection",
-        "<script", "xss", "../", "..\\", "/etc/passwd", "lfi", "rfi",
-        "cmd=", "exec=", "powershell", "shellshock", "jndi:", "${jndi"
+        "union select",
+        "' or 1=1",
+        "\" or 1=1",
+        " or 1=1",
+        "sql injection",
+        "<script",
+        "xss",
+        "../",
+        "..\\",
+        "/etc/passwd",
+        "lfi",
+        "rfi",
+        "cmd=",
+        "exec=",
+        "powershell",
+        "shellshock",
+        "jndi:",
+        "${jndi",
     ]
     upload_exec_tokens = [
         "file upload", "webshell", ".php", ".jsp", ".aspx",
@@ -395,38 +426,133 @@ def classify_web_attack_fallback(activity: str) -> str:
     if text.startswith("get /"):
         return "reconnaissance"
     if text.startswith("post /login") or text.startswith("post /signin"):
+        if " or 1=1" in text or "union select" in text:
+            return "web_attack"
         return "credential_attack"
 
     return "normal"
 
 
-def score_command_risk(command: str) -> float:
+def score_command_risk(command: str, event_type: str = "ssh") -> float:
     cmd = (command or "").strip().lower()
+    normalized_type = normalize_event_type(event_type)
+
     if not cmd:
         return 0.0
 
-    exact_benign = {
-        "ls", "pwd", "whoami", "id", "date", "uname", "hostname",
-        "echo", "clear", "history"
-    }
-    if cmd in exact_benign:
-        return 0.05
+    # =========================
+    # WEB scoring
+    # =========================
+    if normalized_type == "web":
+        score = 0.08
 
-    if any(cmd == item or cmd.startswith(item + " ") for item in ["cat", "head", "tail", "cd", "find", "ps", "top", "df", "du"]):
-        return 0.15
+        if cmd.startswith("get /"):
+            score = max(score, 0.18)
+
+        if cmd.startswith("post /login") or cmd.startswith("post /signin") or cmd.startswith("post /auth"):
+            score = max(score, 0.28)
+
+        recon_tokens = [
+            "get /admin", "get /administrator", "get /.env", "get /.git",
+            "get /phpmyadmin", "get /wp-admin", "get /manager/html",
+            "head /", "options /", "trace /", "nikto", "scan attempt",
+            "dirb", "gobuster", "ffuf", "enumeration", "probe"
+        ]
+        injection_tokens = [
+            "union select",
+            "' or 1=1",
+            "\" or 1=1",
+            " or 1=1",
+            "sql injection",
+            "<script",
+            "xss",
+            "../",
+            "..\\",
+            "/etc/passwd",
+            "lfi",
+            "rfi",
+            "cmd=",
+            "exec=",
+            "powershell",
+            "shellshock",
+            "jndi:",
+            "${jndi",
+        ]
+        exploit_tokens = [
+            "webshell", "shell.php", "cmd.php", ".jsp", ".aspx",
+            "malicious payload", "file upload"
+        ]
+        flood_tokens = [
+            "http flood", "udp flood", "syn flood", "ack flood",
+            "icmp flood", "slowloris", "too many requests", "traffic spike", "flood"
+        ]
+
+        if any(token in cmd for token in recon_tokens):
+            score = max(score, 0.42)
+
+        if any(token in cmd for token in injection_tokens):
+            score = max(score, 0.68)
+
+        if any(token in cmd for token in exploit_tokens):
+            score = max(score, 0.82)
+
+        if any(token in cmd for token in flood_tokens):
+            score = max(score, 0.78)
+
+        return round(clamp01(score), 4)
+
+    # =========================
+    # SSH scoring
+    # =========================
+    exact_benign = {
+        "ls", "pwd", "whoami", "id", "date", "clear", "history", "hostname", "uname"
+    }
+    benign_prefixes = [
+        "echo ",
+        "cd ",
+        "ls ",
+    ]
+    if cmd in exact_benign or any(cmd.startswith(prefix) for prefix in benign_prefixes):
+        return 0.03
+
+    # Mild information-gathering that should stay LOW in demo
+    low_recon_tokens = [
+        "uname -a", "netstat", "ss ", "ifconfig", "ip a",
+        "ps aux", "ps -ef", "env", "printenv", "cat /etc/os-release"
+    ]
+    if any(token in cmd for token in low_recon_tokens):
+        return 0.22
+
+    if "cat /etc/passwd" in cmd:
+        return 0.38
+
+    # Privilege escalation should be clearly stronger
+    if "sudo su" in cmd or "sudo -i" in cmd or cmd == "su" or cmd.startswith("su "):
+        return 0.72
+
+    if cmd.startswith("useradd ") or cmd.startswith("usermod ") or " backdoor" in cmd:
+        return 0.88
+
+    if cmd.startswith("passwd ") or "chpasswd" in cmd:
+        return 0.78
+
+    if "/etc/sudoers" in cmd or "visudo" in cmd:
+        return 0.90
+
+    if "cat /etc/shadow" in cmd:
+        return 0.95
 
     score = 0.20
 
     medium_tokens = [
-        "netstat", "ss", "ifconfig", "ip a", "ping", "scp", "ftp", "telnet",
+        "scp", "ftp", "telnet",
         "ssh ", "curl ", "wget ", "nc ", "netcat", "nmap", "masscan",
-        "hydra", "sqlmap", "nikto", "enum4linux", "scan", "recon",
-        "post /login", "get /admin", "wp-login", "bruteforce"
+        "hydra", "sqlmap", "nikto", "enum4linux", "scan", "recon"
     ]
     suspicious_tokens = [
         "http://", "https://", "/tmp/", "base64", "bash -c", "sh -c",
         "sudo", "nohup", "systemctl", "crontab", "useradd",
-        "../", "union select", " or 1=1", "<script", "payload", "suspicious"
+        "../", "payload", "suspicious", "passwd ", "backdoor"
     ]
     critical_tokens = [
         "chmod +x", "./", "bash -i", "/bin/bash -i", "python -c", "perl -e",
@@ -452,7 +578,7 @@ def score_command_risk(command: str) -> float:
     has_pipe_exec = ("| bash" in cmd) or ("| sh" in cmd)
     has_reverse_shell = any(token in cmd for token in ["nc -e", "/bin/bash -i", "bash -i", "python -c", "perl -e", "reverse shell"])
     has_destructive = any(token in cmd for token in ["rm -rf", "mkfs", "dd if="])
-    has_credential_access = any(token in cmd for token in ["cat /etc/shadow", "/etc/passwd"])
+    has_credential_access = "cat /etc/shadow" in cmd
 
     if has_download and has_permission_change and has_direct_exec:
         return 0.96
@@ -464,6 +590,16 @@ def score_command_risk(command: str) -> float:
         return 0.99
     if has_credential_access:
         return 0.95
+
+    suspicious_download_names = [
+        "malware.sh", "bot.sh", "payload.sh", "miner.sh", "dropper.sh"
+    ]
+
+    if has_download:
+        score = max(score, 0.52)
+
+    if any(token in cmd for token in suspicious_download_names):
+        score = max(score, 0.60)
 
     if has_download and has_direct_exec:
         score += 0.22
@@ -496,8 +632,22 @@ def emergency_override_severity(command: str, event_type: str = "ssh") -> str:
             "cmd.php",
             "command injection",
         ]
+        medium_web = [
+            "union select",
+            "' or 1=1",
+            "\" or 1=1",
+            " or 1=1",
+            "<script",
+            "../",
+            "..\\",
+            "/etc/passwd",
+            "lfi",
+            "rfi",
+        ]
         if any(token in cmd for token in critical_web):
             return "HIGH"
+        if any(token in cmd for token in medium_web):
+            return "MEDIUM"
         return "LOW"
 
     critical_ssh = [
@@ -509,6 +659,24 @@ def emergency_override_severity(command: str, event_type: str = "ssh") -> str:
         "mkfs",
         "dd if=",
         "cat /etc/shadow",
+    ]
+
+    high_privilege = [
+        "useradd ",
+        "usermod ",
+        "visudo",
+        "/etc/sudoers",
+        "backdoor",
+    ]
+
+    medium_privilege = [
+        "sudo su",
+        "sudo -i",
+        "passwd ",
+        "chpasswd",
+        "crontab",
+        "systemctl ",
+        "service ",
     ]
 
     if any(token in cmd for token in critical_ssh):
@@ -523,6 +691,30 @@ def emergency_override_severity(command: str, event_type: str = "ssh") -> str:
 
     if "| bash" in cmd or "| sh" in cmd:
         return "HIGH"
+
+    if any(token in cmd for token in high_privilege):
+        return "HIGH"
+
+    if any(token in cmd for token in medium_privilege):
+        return "MEDIUM"
+
+    suspicious_download = [
+        "wget ",
+        "curl ",
+        "http://",
+        "https://",
+        "malware.sh",
+        "bot.sh",
+        "payload.sh",
+        "miner.sh",
+        "dropper.sh",
+    ]
+
+    if any(token in cmd for token in suspicious_download):
+        return "MEDIUM"
+
+    if "cat /etc/passwd" in cmd:
+        return "MEDIUM"
 
     return "LOW"
 
@@ -894,10 +1086,11 @@ def predict_lstm_from_session(session_id: str, command: str) -> Dict[str, Any]:
     sequence = session_commands[session_id][-100:]
 
     if lstm_model is None or lstm_tokenizer is None or lstm_label_encoder is None:
+        fallback_score = score_command_risk(command, event_type="ssh") * 0.35
         return {
             "lstm_session": "Unavailable",
             "session_length": len(sequence),
-            "lstm_score": round(score_command_risk(command) * 0.35, 4),
+            "lstm_score": round(fallback_score, 4),
             "lstm_confidence": 0.0,
         }
 
@@ -926,10 +1119,11 @@ def predict_lstm_from_session(session_id: str, command: str) -> Dict[str, Any]:
             "lstm_confidence": round(pred_prob, 4),
         }
     except Exception:
+        fallback_score = score_command_risk(command, event_type="ssh") * 0.35
         return {
             "lstm_session": "Fallback",
             "session_length": len(sequence),
-            "lstm_score": round(score_command_risk(command) * 0.35, 4),
+            "lstm_score": round(fallback_score, 4),
             "lstm_confidence": 0.0,
         }
 
@@ -954,7 +1148,6 @@ def pick_model_first_attack_class(
     normalized_lstm = normalize_attack_label(lstm_session)
     normalized_ciciot = normalize_attack_label(ciciot_attack)
 
-    # SSH: trust LSTM first when confidence is solid
     if normalized_type == "ssh":
         if normalized_lstm and normalized_lstm != "normal" and lstm_confidence >= LSTM_HIGH_CONFIDENCE:
             return normalized_lstm, "lstm"
@@ -981,7 +1174,6 @@ def pick_model_first_attack_class(
         fallback = classify_ssh_attack_fallback(raw_text, lstm_session=lstm_session)
         return fallback, "fallback_rule"
 
-    # WEB/NETWORK: trust CICIoT first when confidence is solid
     if normalized_ciciot and normalized_ciciot != "normal" and ciciot_confidence >= CICIOT_HIGH_CONFIDENCE:
         return normalized_ciciot, "ciciot"
 
@@ -1004,7 +1196,7 @@ def fuse_hybrid_decision(
     normalized_type = normalize_event_type(event_type)
 
     lstm_result = predict_lstm_from_session(session_id=session_id, command=command)
-    command_score = round(score_command_risk(command), 4)
+    command_score = round(score_command_risk(command, event_type=normalized_type), 4)
 
     ciciot_result = {
         "ciciot_attack": None,
@@ -1024,7 +1216,6 @@ def fuse_hybrid_decision(
     ciciot_score = float(ciciot_result["ciciot_score"])
     ciciot_confidence = float(ciciot_result.get("ciciot_confidence", 0.0))
 
-    # Model-dominant weights
     if normalized_type == "ssh":
         if ciciot_features:
             threat_score = (0.50 * lstm_score) + (0.35 * ciciot_score) + (0.15 * command_score)
@@ -1068,6 +1259,7 @@ def fuse_hybrid_decision(
             decision_source = "hybrid"
         else:
             decision_source = "command"
+
     return {
         "severity": final_severity,
         "threat_score": threat_score,
@@ -1122,6 +1314,39 @@ def serialize_event(event: Event) -> Dict[str, Any]:
         "floor_severity": normalize_severity(event.floor_severity or "LOW"),
         "policy_escalated": bool(event.policy_escalated),
         "action_taken": event.action_taken or "logged",
+    }
+
+
+def get_stats_snapshot(db: Session) -> Dict[str, Any]:
+    normalized_event_type = func.lower(func.trim(Event.event_type))
+    normalized_severity = func.upper(func.trim(Event.severity))
+
+    total_events = db.query(Event).count()
+    ssh_count = db.query(Event).filter(normalized_event_type == "ssh").count()
+    web_count = db.query(Event).filter(normalized_event_type == "web").count()
+    high_count = db.query(Event).filter(normalized_severity == "HIGH").count()
+    medium_count = db.query(Event).filter(normalized_severity == "MEDIUM").count()
+    low_count = db.query(Event).filter(normalized_severity == "LOW").count()
+    ciciot_attack_count = (
+        db.query(Event)
+        .filter(Event.ciciot_attack.isnot(None))
+        .filter(func.lower(func.trim(Event.ciciot_attack)).notin_(["normal", "benign"]))
+        .count()
+    )
+    escalated_count = db.query(Event).filter(Event.policy_escalated == True).count()  # noqa: E712
+
+    return {
+        "total_events": total_events,
+        "ssh_count": ssh_count,
+        "web_count": web_count,
+        "high_count": high_count,
+        "medium_count": medium_count,
+        "low_count": low_count,
+        "ciciot_attack_count": ciciot_attack_count,
+        "policy_escalations": escalated_count,
+        "bad_actors_count": len(bad_actors),
+        "rate_limiter_ips": len(rate_limiter.requests),
+        "bad_actors": bad_actors,
     }
 
 
@@ -1257,36 +1482,7 @@ def model_info():
 
 @app.get("/stats")
 def stats(db: Session = Depends(get_db)):
-    normalized_event_type = func.lower(func.trim(Event.event_type))
-    normalized_severity = func.upper(func.trim(Event.severity))
-
-    total_events = db.query(Event).count()
-    ssh_count = db.query(Event).filter(normalized_event_type == "ssh").count()
-    web_count = db.query(Event).filter(normalized_event_type == "web").count()
-    high_count = db.query(Event).filter(normalized_severity == "HIGH").count()
-    medium_count = db.query(Event).filter(normalized_severity == "MEDIUM").count()
-    low_count = db.query(Event).filter(normalized_severity == "LOW").count()
-    ciciot_attack_count = (
-        db.query(Event)
-        .filter(Event.ciciot_attack.isnot(None))
-        .filter(func.lower(func.trim(Event.ciciot_attack)).notin_(["normal", "benign"]))
-        .count()
-    )
-    escalated_count = db.query(Event).filter(Event.policy_escalated == True).count()  # noqa: E712
-
-    return {
-        "total_events": total_events,
-        "ssh_count": ssh_count,
-        "web_count": web_count,
-        "high_count": high_count,
-        "medium_count": medium_count,
-        "low_count": low_count,
-        "ciciot_attack_count": ciciot_attack_count,
-        "policy_escalations": escalated_count,
-        "bad_actors_count": len(bad_actors),
-        "rate_limiter_ips": len(rate_limiter.requests),
-        "bad_actors": bad_actors,
-    }
+    return get_stats_snapshot(db)
 
 
 @app.post("/predict_ciciot")
@@ -1399,23 +1595,9 @@ async def ingest_network(payload: WebIngestRequest, db: Session = Depends(get_db
 
 @app.get("/dashboard")
 def dashboard(request: Request, db: Session = Depends(get_db)):
-    normalized_event_type = func.lower(func.trim(Event.event_type))
-    normalized_severity = func.upper(func.trim(Event.severity))
+    stats_snapshot = get_stats_snapshot(db)
 
     events = db.query(Event).order_by(Event.id.desc()).limit(50).all()
-    total = db.query(Event).count()
-    ssh = db.query(Event).filter(normalized_event_type == "ssh").count()
-    web = db.query(Event).filter(normalized_event_type == "web").count()
-    high = db.query(Event).filter(normalized_severity == "HIGH").count()
-    policy_escalations = db.query(Event).filter(Event.policy_escalated == True).count()  # noqa: E712
-
-    ciciot_hits = (
-        db.query(Event)
-        .filter(Event.ciciot_attack.isnot(None))
-        .filter(func.lower(func.trim(Event.ciciot_attack)).notin_(["normal", "benign"]))
-        .count()
-    )
-
     events_data = [serialize_event(e) for e in events]
     live_count = len(events_data)
     visible_high = sum(1 for e in events_data if (e.get("severity") or "").upper() == "HIGH")
@@ -1429,14 +1611,14 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         {
             "request": request,
             "events": events_data,
-            "total_events": total,
-            "ssh_count": ssh,
-            "web_count": web,
-            "high_count": high,
+            "total_events": stats_snapshot["total_events"],
+            "ssh_count": stats_snapshot["ssh_count"],
+            "web_count": stats_snapshot["web_count"],
+            "high_count": stats_snapshot["high_count"],
             "avg_threat": round(avg_threat, 3),
-            "bad_actors_count": len(bad_actors),
-            "policy_escalations": policy_escalations,
-            "ciciot_attack_count": ciciot_hits,
+            "bad_actors_count": stats_snapshot["bad_actors_count"],
+            "policy_escalations": stats_snapshot["policy_escalations"],
+            "ciciot_attack_count": stats_snapshot["ciciot_attack_count"],
             "live_count": live_count,
             "visible_high": visible_high,
             "lstm_info": app_state.get("lstm_info", {}),

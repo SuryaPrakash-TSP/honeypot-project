@@ -29,12 +29,12 @@
             --danger: #ef4444;
             --danger-soft: rgba(239, 68, 68, 0.14);
             --purple-soft: rgba(124, 92, 255, 0.14);
-            --shadow: 0 20px 50px rgba(0, 0, 0, 0.34);
-            --radius: 20px;
-            --radius-sm: 14px;
-            --shell-max: 1600px;
-            --shell-pad: 20px;
-            --table-max-h: 70vh;
+            --shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
+            --radius: 16px;
+            --radius-sm: 12px;
+            --shell-max: 1580px;
+            --shell-pad: 10px;
+            --table-max-h: 58vh;
         }
 
         body.theme-light {
@@ -57,13 +57,14 @@
             --warning-soft: rgba(245, 158, 11, 0.12);
             --danger-soft: rgba(239, 68, 68, 0.10);
             --purple-soft: rgba(124, 58, 237, 0.10);
-            --shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+            --shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
         }
 
         body.compact {
-            --shell-pad: 12px;
-            --radius: 16px;
-            --radius-sm: 12px;
+            --shell-pad: 8px;
+            --radius: 14px;
+            --radius-sm: 10px;
+            --table-max-h: 60vh;
         }
 
         * {
@@ -102,23 +103,23 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
             flex-wrap: wrap;
-            margin-bottom: 18px;
+            margin-bottom: 10px;
         }
 
         .toolbar-title {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             color: var(--muted);
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 800;
         }
 
         .toolbar-actions {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             flex-wrap: wrap;
         }
 
@@ -126,9 +127,9 @@
             border: 1px solid var(--border);
             background: var(--panel-soft);
             color: var(--text);
-            border-radius: 12px;
-            padding: 10px 14px;
-            font-size: 12px;
+            border-radius: 10px;
+            padding: 8px 11px;
+            font-size: 11px;
             font-weight: 800;
             cursor: pointer;
             transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease;
@@ -157,14 +158,14 @@
 
         .hero-grid {
             display: grid;
-            grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.8fr);
-            gap: 16px;
-            margin-bottom: 16px;
+            grid-template-columns: minmax(0, 1.55fr) minmax(270px, 0.72fr);
+            gap: 10px;
+            margin-bottom: 10px;
             align-items: stretch;
         }
 
         .hero-panel {
-            padding: 24px;
+            padding: 14px 16px;
             position: relative;
         }
 
@@ -180,13 +181,13 @@
         .eyebrow {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 7px 12px;
+            gap: 7px;
+            padding: 5px 10px;
             border-radius: 999px;
             background: var(--accent-soft);
             color: var(--accent);
             border: 1px solid rgba(36, 196, 255, 0.22);
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 900;
             letter-spacing: 0.08em;
             text-transform: uppercase;
@@ -198,30 +199,30 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            gap: 18px;
-            margin-top: 16px;
+            gap: 12px;
+            margin-top: 10px;
             position: relative;
             z-index: 1;
         }
 
         h1 {
             margin: 0;
-            font-size: clamp(26px, 3vw, 34px);
-            line-height: 1.05;
+            font-size: clamp(22px, 2.2vw, 28px);
+            line-height: 1.02;
             letter-spacing: -0.03em;
         }
 
         .hero-sub {
-            margin-top: 10px;
+            margin-top: 7px;
             color: var(--muted-2);
-            font-size: 13px;
-            line-height: 1.65;
-            max-width: 860px;
+            font-size: 12px;
+            line-height: 1.5;
+            max-width: 780px;
         }
 
         .hero-actions {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             flex-wrap: wrap;
             justify-content: flex-end;
         }
@@ -229,8 +230,8 @@
         .hero-mini-stats {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 12px;
-            margin-top: 20px;
+            gap: 10px;
+            margin-top: 12px;
             position: relative;
             z-index: 1;
         }
@@ -238,39 +239,39 @@
         .mini-chip {
             border: 1px solid var(--border);
             background: var(--panel-soft);
-            border-radius: 16px;
-            padding: 16px;
+            border-radius: 12px;
+            padding: 11px 12px;
             min-width: 0;
         }
 
         .mini-chip .label {
-            font-size: 11px;
+            font-size: 10px;
             color: var(--muted);
-            margin-bottom: 8px;
+            margin-bottom: 5px;
             font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 0.04em;
         }
 
         .mini-chip .value {
-            font-size: clamp(18px, 2vw, 24px);
+            font-size: clamp(16px, 1.6vw, 21px);
             font-weight: 900;
-            line-height: 1.1;
+            line-height: 1.08;
             word-break: break-word;
             font-variant-numeric: tabular-nums;
         }
 
         .status-panel {
-            padding: 18px;
+            padding: 12px;
             display: grid;
-            gap: 12px;
+            gap: 10px;
             align-content: start;
         }
 
         .status-card {
             border: 1px solid var(--border);
-            border-radius: 18px;
-            padding: 18px;
+            border-radius: 14px;
+            padding: 12px;
             background: linear-gradient(180deg, rgba(36, 196, 255, 0.10), rgba(255,255,255,0.02));
         }
 
@@ -278,13 +279,13 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             flex-wrap: wrap;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
         .status-title {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 900;
             color: var(--muted);
             text-transform: uppercase;
@@ -294,10 +295,10 @@
         .live-pill {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 8px 12px;
+            gap: 7px;
+            padding: 6px 10px;
             border-radius: 999px;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 900;
             letter-spacing: 0.04em;
         }
@@ -315,66 +316,66 @@
         }
 
         .status-value {
-            font-size: clamp(30px, 5vw, 40px);
+            font-size: clamp(24px, 3vw, 32px);
             font-weight: 900;
             line-height: 1;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             font-variant-numeric: tabular-nums;
         }
 
         .status-sub {
             color: var(--muted);
-            font-size: 12px;
+            font-size: 11px;
         }
 
         .quick-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 10px;
+            gap: 8px;
         }
 
         .quick-stat {
             border: 1px solid var(--border);
             background: var(--panel-soft);
-            border-radius: 14px;
-            padding: 14px;
+            border-radius: 12px;
+            padding: 10px;
             min-width: 0;
         }
 
         .quick-label {
-            font-size: 11px;
+            font-size: 10px;
             color: var(--muted);
-            margin-bottom: 6px;
+            margin-bottom: 5px;
             font-weight: 700;
         }
 
         .quick-value {
-            font-size: clamp(18px, 2.1vw, 24px);
+            font-size: clamp(15px, 1.7vw, 20px);
             font-weight: 900;
-            line-height: 1.15;
-            margin-bottom: 4px;
+            line-height: 1.12;
+            margin-bottom: 2px;
             word-break: break-word;
             font-variant-numeric: tabular-nums;
         }
 
         .quick-note {
-            font-size: 11px;
+            font-size: 10px;
             color: var(--muted);
         }
 
         .kpi-grid {
             display: grid;
             grid-template-columns: repeat(6, minmax(0, 1fr));
-            gap: 12px;
-            margin-bottom: 16px;
+            gap: 10px;
+            margin-bottom: 10px;
         }
 
         .kpi {
             border: 1px solid var(--border);
             background: linear-gradient(180deg, var(--panel), rgba(255,255,255,0.01));
-            border-radius: 18px;
-            padding: 16px;
-            min-height: 118px;
+            border-radius: 14px;
+            padding: 12px;
+            min-height: 92px;
             min-width: 0;
             display: flex;
             flex-direction: column;
@@ -385,23 +386,23 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
 
         .kpi-icon {
-            width: 42px;
-            height: 42px;
+            width: 34px;
+            height: 34px;
             display: grid;
             place-items: center;
-            border-radius: 12px;
+            border-radius: 10px;
             background: var(--panel-soft);
-            font-size: 15px;
+            font-size: 13px;
             flex: 0 0 auto;
         }
 
         .kpi-value {
-            margin-top: 12px;
-            font-size: clamp(24px, 3vw, 30px);
+            margin-top: 8px;
+            font-size: clamp(20px, 2vw, 24px);
             font-weight: 900;
             line-height: 1;
             word-break: break-word;
@@ -409,21 +410,21 @@
         }
 
         .kpi-label {
-            margin-top: 8px;
-            font-size: 12px;
+            margin-top: 5px;
+            font-size: 11px;
             font-weight: 800;
             color: var(--muted-2);
-            line-height: 1.35;
+            line-height: 1.25;
         }
 
         .stream-section {
-            margin-bottom: 16px;
+            margin-bottom: 10px;
         }
 
         .lower-grid {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
-            gap: 16px;
+            grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+            gap: 10px;
             align-items: start;
         }
 
@@ -431,21 +432,21 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            gap: 12px;
-            padding: 18px 18px 14px;
+            gap: 10px;
+            padding: 12px 14px 10px;
             border-bottom: 1px solid var(--border);
             flex-wrap: wrap;
         }
 
         .section-title {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 900;
         }
 
         .section-sub {
-            margin-top: 4px;
-            font-size: 12px;
-            line-height: 1.5;
+            margin-top: 3px;
+            font-size: 11px;
+            line-height: 1.45;
             color: var(--muted);
             max-width: 760px;
         }
@@ -461,11 +462,17 @@
             width: 100%;
             overflow-x: auto;
             overflow-y: auto;
-            padding: 12px;
+            padding: 8px;
+            -webkit-overflow-scrolling: touch;
+            will-change: scroll-position;
         }
 
         .table-wrap {
             max-height: var(--table-max-h);
+        }
+
+        .mini-table-wrap {
+            max-height: 32vh;
         }
 
         .events-table,
@@ -475,20 +482,20 @@
         }
 
         .events-table {
-            min-width: 1220px;
+            min-width: 1180px;
         }
 
         .mini-table {
-            min-width: 760px;
+            min-width: 720px;
         }
 
         th,
         td {
             text-align: left;
-            padding: 11px 10px;
+            padding: 9px 8px;
             border-bottom: 1px solid rgba(255,255,255,0.06);
             vertical-align: top;
-            font-size: 12px;
+            font-size: 11px;
         }
 
         body.theme-light th,
@@ -524,11 +531,11 @@
         }
 
         .command {
-            min-width: 300px;
-            max-width: 420px;
+            min-width: 260px;
+            max-width: 360px;
             white-space: normal;
             word-break: break-word;
-            line-height: 1.5;
+            line-height: 1.4;
         }
 
         .score {
@@ -543,13 +550,13 @@
         .badge {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
             max-width: 100%;
             white-space: nowrap;
-            padding: 6px 10px;
+            padding: 5px 9px;
             border-radius: 999px;
             border: 1px solid transparent;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 900;
             letter-spacing: 0.02em;
         }
@@ -622,7 +629,8 @@
         .badge-attack-dos,
         .badge-attack-bruteforce,
         .badge-attack-privilege-abuse,
-        .badge-attack-destructive-or-credential-access {
+        .badge-attack-destructive-or-credential-access,
+        .badge-attack-credential-attack {
             color: #fca5a5;
             background: var(--danger-soft);
             border-color: rgba(239,68,68,0.22);
@@ -634,11 +642,11 @@
         }
 
         .icon-btn {
-            width: 34px;
-            height: 34px;
+            width: 30px;
+            height: 30px;
             display: grid;
             place-items: center;
-            border-radius: 10px;
+            border-radius: 9px;
             border: 1px solid var(--border);
             background: var(--panel-soft);
             color: var(--text);
@@ -661,47 +669,47 @@
         }
 
         .details-panel {
-            padding: 14px;
+            padding: 12px;
             display: grid;
-            gap: 12px;
+            gap: 10px;
         }
 
         .details-grid {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 10px;
+            gap: 8px;
         }
 
         .detail-box {
             border: 1px solid var(--border);
             background: var(--panel-soft);
-            border-radius: 12px;
-            padding: 12px;
+            border-radius: 10px;
+            padding: 10px;
             min-width: 0;
         }
 
         .detail-k {
-            font-size: 10px;
+            font-size: 9px;
             color: var(--muted);
-            margin-bottom: 6px;
+            margin-bottom: 5px;
             text-transform: uppercase;
             letter-spacing: 0.04em;
             font-weight: 800;
         }
 
         .detail-v {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 900;
             word-break: break-word;
-            line-height: 1.5;
+            line-height: 1.4;
         }
 
         .detail-command,
         .alert-command {
             border: 1px solid var(--border);
             background: #091224;
-            border-radius: 12px;
-            padding: 14px;
+            border-radius: 10px;
+            padding: 12px;
         }
 
         body.theme-light .detail-command,
@@ -714,8 +722,8 @@
             margin: 0;
             white-space: pre-wrap;
             word-break: break-word;
-            line-height: 1.6;
-            font-size: 12px;
+            line-height: 1.5;
+            font-size: 11px;
             color: #dbeafe;
         }
 
@@ -726,15 +734,15 @@
 
         .health-list {
             display: grid;
-            gap: 12px;
-            padding: 14px;
+            gap: 10px;
+            padding: 10px;
         }
 
         .health-card {
             border: 1px solid var(--border);
             background: var(--panel-soft);
-            border-radius: 16px;
-            padding: 14px;
+            border-radius: 12px;
+            padding: 10px 12px;
             min-width: 0;
         }
 
@@ -742,20 +750,20 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            gap: 10px;
-            margin-bottom: 10px;
+            gap: 8px;
+            margin-bottom: 8px;
             flex-wrap: wrap;
         }
 
         .health-name {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 900;
         }
 
         .health-status {
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 900;
-            padding: 6px 10px;
+            padding: 5px 8px;
             border-radius: 999px;
             text-transform: uppercase;
             letter-spacing: 0.04em;
@@ -782,10 +790,10 @@
 
         .health-meta {
             display: grid;
-            gap: 6px;
-            font-size: 12px;
+            gap: 4px;
+            font-size: 11px;
             color: var(--muted);
-            line-height: 1.5;
+            line-height: 1.45;
         }
 
         .health-meta strong {
@@ -795,7 +803,7 @@
         .empty-cell {
             text-align: center;
             color: var(--muted);
-            padding: 22px 12px;
+            padding: 18px 10px;
         }
 
         .new-row {
@@ -824,7 +832,7 @@
             overflow: auto;
             background: linear-gradient(180deg, #10192d, #0c1324);
             border: 1px solid rgba(239,68,68,0.22);
-            border-radius: 20px;
+            border-radius: 18px;
             box-shadow: 0 30px 70px rgba(0,0,0,0.45);
         }
 
@@ -834,31 +842,31 @@
         }
 
         .alert-head {
-            padding: 18px 20px;
+            padding: 16px 18px;
             display: flex;
             justify-content: space-between;
-            gap: 12px;
+            gap: 10px;
             align-items: flex-start;
             background: linear-gradient(180deg, rgba(239,68,68,0.16), rgba(239,68,68,0.05));
             border-bottom: 1px solid rgba(239,68,68,0.18);
         }
 
         .alert-title {
-            margin: 0 0 5px;
-            font-size: 18px;
+            margin: 0 0 4px;
+            font-size: 16px;
             font-weight: 900;
         }
 
         .alert-sub {
-            font-size: 12px;
+            font-size: 11px;
             color: #fca5a5;
-            line-height: 1.45;
+            line-height: 1.4;
         }
 
         .close-btn {
-            width: 38px;
-            height: 38px;
-            border-radius: 12px;
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
             border: 1px solid var(--border);
             background: rgba(255,255,255,0.04);
             color: var(--text);
@@ -867,37 +875,37 @@
         }
 
         .alert-body {
-            padding: 18px;
+            padding: 16px;
             display: grid;
-            gap: 12px;
+            gap: 10px;
         }
 
         .alert-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 10px;
+            gap: 8px;
         }
 
         .alert-kv {
             border: 1px solid var(--border);
             background: var(--panel-soft);
-            border-radius: 12px;
-            padding: 12px;
+            border-radius: 10px;
+            padding: 10px;
             min-width: 0;
         }
 
         .alert-k {
-            font-size: 11px;
+            font-size: 10px;
             color: var(--muted);
-            margin-bottom: 6px;
+            margin-bottom: 5px;
             font-weight: 800;
         }
 
         .alert-v {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 900;
             word-break: break-word;
-            line-height: 1.5;
+            line-height: 1.4;
         }
 
         @media (max-width: 1480px) {
@@ -912,7 +920,8 @@
                 grid-template-columns: 1fr;
             }
 
-            .table-wrap {
+            .table-wrap,
+            .mini-table-wrap {
                 max-height: none;
             }
         }
@@ -936,7 +945,7 @@
 
         @media (max-width: 760px) {
             .shell {
-                padding: 12px;
+                padding: 10px;
             }
 
             .toolbar {
@@ -985,16 +994,16 @@
             .kpi-value,
             .quick-value,
             .mini-chip .value {
-                font-size: 22px;
+                font-size: 20px;
             }
 
             .eyebrow {
-                font-size: 10px;
+                font-size: 9px;
             }
         }
     </style>
 </head>
-<body>
+<body class="compact">
     <div class="shell">
         <div class="toolbar">
             <div class="toolbar-title">
@@ -1022,7 +1031,7 @@
                     <div>
                         <h1>Honeypot Dashboard</h1>
                         <div class="hero-sub">
-                            Real-time SSH and web telemetry, hybrid threat scoring, live alerts, actor watchlisting, and model-backed security intelligence for your honeypot environment.
+                            Real-time SSH and web telemetry, hybrid threat scoring, live alerts, actor watchlisting, and model-backed security intelligence.
                         </div>
                     </div>
 
@@ -1140,7 +1149,7 @@
             <div class="section-head">
                 <div>
                     <div class="section-title">Live Event Stream</div>
-                    <div class="section-sub">Incoming sessions, hybrid decisions, severity output, and expandable forensic details. This section is intentionally full-width for desktop visibility.</div>
+                    <div class="section-sub">Incoming sessions, hybrid decisions, severity output, and expandable forensic details.</div>
                 </div>
                 <div class="section-actions">
                     <button class="btn" id="refresh-stats-btn" type="button"><i class="fas fa-rotate-right"></i> Refresh</button>
@@ -1360,10 +1369,10 @@
     <script>
         class HoneypotDashboard {
             constructor() {
-                this.maxRows = 50;
+                this.maxRows = 30;
                 this.ws = null;
                 this.wsReconnectDelay = 2500;
-                this.statsRefreshIntervalMs = 3000;
+                this.statsRefreshIntervalMs = 10000;
                 this.globalBadActors = new Map();
                 this.themeKey = 'honeypot-dashboard-theme';
                 this.compactKey = 'honeypot-dashboard-compact';
@@ -1514,7 +1523,6 @@
                 if (payload.type === 'new_event' && payload.event) {
                     this.addEventRow(payload.event);
                     this.refreshVisibleStats();
-                    this.fetchGlobalStats();
                 }
 
                 if (payload.type === 'alert') {
@@ -1833,21 +1841,12 @@
                 const rows = Array.from(document.querySelectorAll('#events-tbody > tr:not(.details-row)'));
 
                 let visibleTotal = rows.length;
-                let visibleSsh = 0;
-                let visibleWeb = 0;
                 let visibleHigh = 0;
                 let avgThreatSum = 0;
 
                 rows.forEach((row) => {
-                    const eventType = String(row.dataset.eventType || 'ssh').toLowerCase();
                     const severity = String(row.dataset.severity || 'LOW').toUpperCase();
                     const threat = this.num(row.dataset.threatScore, 0);
-
-                    if (eventType === 'web') {
-                        visibleWeb += 1;
-                    } else {
-                        visibleSsh += 1;
-                    }
 
                     if (severity === 'HIGH') {
                         visibleHigh += 1;
@@ -1863,12 +1862,26 @@
                 this.setText('summary-visible-high', visibleHigh);
                 this.setText('live-count', visibleTotal);
                 this.setFormattedThreat('summary-visible-avg-threat', avgThreat);
-
-                this.setText('kpi-total-events', visibleTotal);
-                this.setText('kpi-ssh-events', visibleSsh);
-                this.setText('kpi-web-events', visibleWeb);
-                this.setText('kpi-high-severity', visibleHigh);
                 this.setFormattedThreat('kpi-average-threat', avgThreat);
+            }
+
+            updateGlobalKpisFromStats(data) {
+                const totalEvents = this.getFirstNumber(data, ['total_events']);
+                const sshCount = this.getFirstNumber(data, ['ssh_count']);
+                const webCount = this.getFirstNumber(data, ['web_count']);
+                const highCount = this.getFirstNumber(data, ['high_count']);
+                const badActorsCount = this.getFirstNumber(data, ['bad_actors_count', 'tracked_actors', 'actors_count']);
+                const policyEscalations = this.getFirstNumber(data, ['policy_escalations']);
+
+                this.setText('kpi-total-events', totalEvents);
+                this.setText('kpi-ssh-events', sshCount);
+                this.setText('kpi-web-events', webCount);
+                this.setText('kpi-high-severity', highCount);
+                this.setText('kpi-tracked-actors', badActorsCount);
+
+                this.setText('summary-global-policy-escalations', policyEscalations);
+                this.setText('summary-tracked-actors', badActorsCount);
+                this.setText('bad-actors-badge-count', badActorsCount);
             }
 
             async fetchGlobalStats() {
@@ -1876,13 +1889,7 @@
                     const response = await fetch('/stats', { cache: 'no-store' });
                     const data = await response.json();
 
-                    const badActorsCount = this.getFirstNumber(data, ['bad_actors_count', 'tracked_actors', 'actors_count']);
-                    const policyEscalations = this.getFirstNumber(data, ['policy_escalations']);
-
-                    this.setText('summary-global-policy-escalations', policyEscalations);
-                    this.setText('summary-tracked-actors', badActorsCount);
-                    this.setText('kpi-tracked-actors', badActorsCount);
-                    this.setText('bad-actors-badge-count', badActorsCount);
+                    this.updateGlobalKpisFromStats(data);
 
                     this.globalBadActors.clear();
 
