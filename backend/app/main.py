@@ -28,12 +28,14 @@ import pickle
 import threading
 import time
 import webbrowser
+import re
 
 import joblib
 import numpy as np
 import pandas as pd
 import pytz
 from tensorflow import keras
+
 
 # =========================
 # Globals / App State
@@ -64,12 +66,173 @@ engine = create_engine(
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 # =========================
-# Model-first decision tuning
+# Decision Tuning
 # =========================
 LSTM_HIGH_CONFIDENCE = 0.75
 LSTM_MEDIUM_CONFIDENCE = 0.40
+LSTM_LOW_CONFIDENCE = 0.25
+
 CICIOT_HIGH_CONFIDENCE = 0.80
 CICIOT_MEDIUM_CONFIDENCE = 0.60
+CICIOT_LOW_CONFIDENCE = 0.35
+
+HIGH_SEVERITY_SCORE = 0.75
+MEDIUM_SEVERITY_SCORE = 0.40
+
+
+# =========================
+# Regex Rule Engine
+# =========================
+WEB_SQLI_PATTERNS = [
+    re.compile(r"(?i)\bunion\s+select\b"),
+    re.compile(r"(?i)(?:'|\"|\b)\s*or\s+1\s*=\s*1"),
+    re.compile(r"(?i)\binformation_schema\b"),
+    re.compile(r"(?i)\bsleep\s*\("),
+    re.compile(r"(?i)\bbenchmark\s*\("),
+    re.compile(r"(?i)\bwaitfor\s+delay\b"),
+    re.compile(r"(?i)\bload_file\s*\("),
+    re.compile(r"(?i)\binto\s+outfile\b"),
+]
+
+WEB_XSS_PATTERNS = [
+    re.compile(r"(?i)<script[^>]*>"),
+    re.compile(r"(?i)onerror\s*="),
+    re.compile(r"(?i)onload\s*="),
+    re.compile(r"(?i)javascript:"),
+    re.compile(r"(?i)<img[^>]+onerror"),
+]
+
+WEB_TRAVERSAL_PATTERNS = [
+    re.compile(r"(?i)\.\./"),
+    re.compile(r"(?i)\.\.\\"),
+    re.compile(r"(?i)/etc/passwd"),
+    re.compile(r"(?i)/windows/win\.ini"),
+]
+
+WEB_RCE_PATTERNS = [
+    re.compile(r"(?i)\bcmd\s*="),
+    re.compile(r"(?i)\bexec\s*="),
+    re.compile(r"(?i)\bpowershell\b"),
+    re.compile(r"(?i)\bshellshock\b"),
+    re.compile(r"(?i)\$\{jndi"),
+    re.compile(r"(?i)\bjndi:"),
+    re.compile(r"(?i)\bwget\s+https?://"),
+    re.compile(r"(?i)\bcurl\s+https?://"),
+]
+
+WEB_RECON_PATTERNS = [
+    re.compile(r"(?i)\bget\s+/admin\b"),
+    re.compile(r"(?i)\bget\s+/administrator\b"),
+    re.compile(r"(?i)\bget\s+/\.env\b"),
+    re.compile(r"(?i)\bget\s+/\.git\b"),
+    re.compile(r"(?i)\bget\s+/phpmyadmin\b"),
+    re.compile(r"(?i)\bget\s+/wp-admin\b"),
+    re.compile(r"(?i)\bget\s+/manager/html\b"),
+    re.compile(r"(?i)\bnikto\b"),
+    re.compile(r"(?i)\bgobuster\b"),
+    re.compile(r"(?i)\bffuf\b"),
+    re.compile(r"(?i)\bdirb\b"),
+    re.compile(r"(?i)\bscan\b"),
+    re.compile(r"(?i)\benumeration\b"),
+    re.compile(r"(?i)\bprobe\b"),
+]
+
+WEB_CRED_PATTERNS = [
+    re.compile(r"(?i)\bpost\s+/login\b"),
+    re.compile(r"(?i)\bpost\s+/signin\b"),
+    re.compile(r"(?i)\bpost\s+/auth\b"),
+    re.compile(r"(?i)\bpost\s+/session\b"),
+    re.compile(r"(?i)\bwp-login\b"),
+    re.compile(r"(?i)\bxmlrpc\.php\b"),
+    re.compile(r"(?i)\bcredential stuffing\b"),
+    re.compile(r"(?i)\bbrute\s*force\b"),
+    re.compile(r"(?i)\bfailed login\b"),
+    re.compile(r"(?i)\binvalid password\b"),
+]
+
+WEB_DDOS_PATTERNS = [
+    re.compile(r"(?i)\bhttp flood\b"),
+    re.compile(r"(?i)\budp flood\b"),
+    re.compile(r"(?i)\bsyn flood\b"),
+    re.compile(r"(?i)\back flood\b"),
+    re.compile(r"(?i)\bicmp flood\b"),
+    re.compile(r"(?i)\bslowloris\b"),
+    re.compile(r"(?i)\btoo many requests\b"),
+    re.compile(r"(?i)\brate limit exceeded\b"),
+    re.compile(r"(?i)\btraffic spike\b"),
+    re.compile(r"(?i)\bflood\b"),
+]
+
+SSH_DESTRUCTIVE_PATTERNS = [
+    re.compile(r"(?i)\brm\s+-rf\b"),
+    re.compile(r"(?i)\bmkfs\b"),
+    re.compile(r"(?i)\bdd\s+if="),
+    re.compile(r"(?i)\bshred\b"),
+    re.compile(r"(?i)\btruncate\b"),
+]
+
+SSH_PRIV_PATTERNS = [
+    re.compile(r"(?i)\bsudo\b"),
+    re.compile(r"(?i)\bsu\b"),
+    re.compile(r"(?i)\bpasswd\b"),
+    re.compile(r"(?i)\buseradd\b"),
+    re.compile(r"(?i)\busermod\b"),
+    re.compile(r"(?i)\bvisudo\b"),
+    re.compile(r"(?i)/etc/sudoers"),
+    re.compile(r"(?i)\bchpasswd\b"),
+    re.compile(r"(?i)\bcrontab\b"),
+    re.compile(r"(?i)\bsystemctl\b"),
+    re.compile(r"(?i)\bservice\b"),
+]
+
+SSH_CRED_PATTERNS = [
+    re.compile(r"(?i)\bhydra\b"),
+    re.compile(r"(?i)\bmedusa\b"),
+    re.compile(r"(?i)\bpatator\b"),
+    re.compile(r"(?i)\bhashcat\b"),
+    re.compile(r"(?i)\bjohn\b"),
+    re.compile(r"(?i)/etc/shadow"),
+    re.compile(r"(?i)\bcredential"),
+]
+
+SSH_EXPLOIT_PATTERNS = [
+    re.compile(r"(?i)\bwget\s+https?://"),
+    re.compile(r"(?i)\bcurl\s+https?://"),
+    re.compile(r"(?i)\bchmod\s+\+x\b"),
+    re.compile(r"(?i)\|\s*bash\b"),
+    re.compile(r"(?i)\|\s*sh\b"),
+    re.compile(r"(?i)\bbash\s+-i\b"),
+    re.compile(r"(?i)/bin/bash\s+-i"),
+    re.compile(r"(?i)\bpython\s+-c\b"),
+    re.compile(r"(?i)\bperl\s+-e\b"),
+    re.compile(r"(?i)\bnc\s+-e\b"),
+    re.compile(r"(?i)\bnohup\b"),
+    re.compile(r"(?i)\breverse shell\b"),
+    re.compile(r"(?i)\bpayload\b"),
+    re.compile(r"(?i)\bbackdoor\b"),
+]
+
+SSH_RECON_PATTERNS = [
+    re.compile(r"(?i)\buname\s+-a\b"),
+    re.compile(r"(?i)\bnetstat\b"),
+    re.compile(r"(?i)\bss\s"),
+    re.compile(r"(?i)\bifconfig\b"),
+    re.compile(r"(?i)\bip\s+a\b"),
+    re.compile(r"(?i)\bwhois\b"),
+    re.compile(r"(?i)\bdig\b"),
+    re.compile(r"(?i)\bnslookup\b"),
+    re.compile(r"(?i)\blsb_release\b"),
+    re.compile(r"(?i)/etc/os-release"),
+    re.compile(r"(?i)\bps aux\b"),
+    re.compile(r"(?i)\bps -ef\b"),
+    re.compile(r"(?i)/etc/passwd"),
+    re.compile(r"(?i)\bnmap\b"),
+    re.compile(r"(?i)\bmasscan\b"),
+    re.compile(r"(?i)\bnikto\b"),
+    re.compile(r"(?i)\benum4linux\b"),
+    re.compile(r"(?i)\bscan\b"),
+    re.compile(r"(?i)\brecon\b"),
+]
 
 
 # =========================
@@ -88,6 +251,7 @@ class Event(Base):
 
     command = Column(String, default="")
     attack_class = Column(String, default="normal")
+    reason = Column(String, default="benign_activity")
 
     severity = Column(String, default="LOW")
     threat_score = Column(Float, default=0.0)
@@ -96,12 +260,12 @@ class Event(Base):
     lstm_score = Column(Float, default=0.0)
     command_score = Column(Float, default=0.0)
 
-    ciciot_attack = Column(String, default=None)
+    ciciot_attack = Column(String, nullable=True)
     ciciot_confidence = Column(Float, default=0.0)
     ciciot_score = Column(Float, default=0.0)
 
     decision_source = Column(String, default="rules")
-    fusion_method = Column(String, default="hybrid_lstm_ciciot_command")
+    fusion_method = Column(String, default="adaptive_hybrid_lstm_ciciot_command")
 
     base_severity = Column(String, default="LOW")
     floor_severity = Column(String, default="LOW")
@@ -131,11 +295,12 @@ def ensure_event_columns():
         "lstm_score": "ALTER TABLE events ADD COLUMN lstm_score FLOAT DEFAULT 0.0",
         "command_score": "ALTER TABLE events ADD COLUMN command_score FLOAT DEFAULT 0.0",
         "ciciot_score": "ALTER TABLE events ADD COLUMN ciciot_score FLOAT DEFAULT 0.0",
-        "fusion_method": "ALTER TABLE events ADD COLUMN fusion_method VARCHAR DEFAULT 'hybrid_lstm_ciciot_command'",
+        "fusion_method": "ALTER TABLE events ADD COLUMN fusion_method VARCHAR DEFAULT 'adaptive_hybrid_lstm_ciciot_command'",
         "base_severity": "ALTER TABLE events ADD COLUMN base_severity VARCHAR DEFAULT 'LOW'",
         "floor_severity": "ALTER TABLE events ADD COLUMN floor_severity VARCHAR DEFAULT 'LOW'",
         "policy_escalated": "ALTER TABLE events ADD COLUMN policy_escalated BOOLEAN DEFAULT 0",
         "action_taken": "ALTER TABLE events ADD COLUMN action_taken VARCHAR DEFAULT 'logged'",
+        "reason": "ALTER TABLE events ADD COLUMN reason VARCHAR DEFAULT 'benign_activity'",
     }
 
     with engine.begin() as conn:
@@ -222,15 +387,13 @@ def normalize_severity(severity: str) -> str:
 
 def normalize_event_type(event_type: Optional[str], default: str = "ssh") -> str:
     value = (event_type or default).strip().lower()
-    if value in {"ssh", "web"}:
-        return value
-    return default
+    return value if value in {"ssh", "web"} else default
 
 
 def severity_from_score(score: float) -> str:
-    if score >= 0.75:
+    if score >= HIGH_SEVERITY_SCORE:
         return "HIGH"
-    if score >= 0.40:
+    if score >= MEDIUM_SEVERITY_SCORE:
         return "MEDIUM"
     return "LOW"
 
@@ -245,50 +408,41 @@ def build_model_session_id(event_type: str, session_id: str) -> str:
     return f"{normalized_type}:{raw_session}"
 
 
+def regex_hit_count(patterns: List[re.Pattern], text_value: str) -> int:
+    text_value = text_value or ""
+    return sum(1 for pattern in patterns if pattern.search(text_value))
+
+
 def normalize_attack_label(raw_label: Optional[str]) -> Optional[str]:
-    if not raw_label:
+    if raw_label is None:
         return None
 
     label = str(raw_label).strip().lower()
     if not label:
         return None
 
-    benign_terms = {"benign", "normal", "harmless", "none", "unknown", "unavailable", "fallback"}
-    if label in benign_terms:
+    if label in {"benign", "normal", "harmless", "none", "unknown", "unavailable", "fallback"}:
         return "normal"
 
-    ddos_terms = [
-        "ddos", "dos", "syn flood", "synflood", "udp flood",
-        "icmp flood", "ack flood", "http flood", "flood"
-    ]
-    if any(term in label for term in ddos_terms):
+    if any(term in label for term in ["ddos", "dos", "syn flood", "udp flood", "icmp flood", "ack flood", "http flood", "flood"]):
         return "ddos"
 
-    recon_terms = [
-        "scan", "recon", "reconnaissance", "portscan",
-        "port scan", "host discovery", "service discovery", "enumeration"
-    ]
-    if any(term in label for term in recon_terms):
+    if any(term in label for term in ["scan", "recon", "reconnaissance", "portscan", "port scan", "enumeration", "discovery"]):
         return "reconnaissance"
 
-    brute_terms = ["bruteforce", "brute force", "dictionary", "credential"]
-    if any(term in label for term in brute_terms):
+    if any(term in label for term in ["bruteforce", "brute force", "credential"]):
         return "credential_attack"
 
-    privilege_terms = ["privilege", "sudo", "su", "root escalation", "escalation", "privilege_abuse"]
-    if any(term in label for term in privilege_terms):
+    if any(term in label for term in ["privilege", "sudo", "escalation", "privilege_abuse"]):
         return "privilege_abuse"
 
-    destructive_terms = ["destructive", "wiper", "rm -rf", "shred", "mkfs"]
-    if any(term in label for term in destructive_terms):
+    if any(term in label for term in ["destructive", "wiper", "rm -rf", "shred", "mkfs"]):
         return "destructive_activity"
 
-    exploit_terms = ["exploit", "malware", "backdoor", "rce", "injection", "shell", "payload", "exploitation"]
-    if any(term in label for term in exploit_terms):
+    if any(term in label for term in ["exploit", "malware", "backdoor", "rce", "injection", "shell", "payload", "exploitation"]):
         return "exploitation"
 
-    bot_terms = ["bot", "botnet", "c2", "command and control"]
-    if any(term in label for term in bot_terms):
+    if any(term in label for term in ["bot", "botnet", "c2", "command and control"]):
         return "botnet_activity"
 
     if "web" in label:
@@ -297,60 +451,84 @@ def normalize_attack_label(raw_label: Optional[str]) -> Optional[str]:
     return label.replace(" ", "_")
 
 
-def classify_ssh_attack_fallback(command: str, lstm_session: Optional[str] = None) -> str:
-    cmd = (command or "").strip().lower()
+# =========================
+# Rule Engine
+# =========================
+def classify_web_attack_fallback(activity: str) -> str:
+    text_value = (activity or "").strip().lower()
 
+    if not text_value:
+        return "normal"
+
+    if regex_hit_count(WEB_DDOS_PATTERNS, text_value) > 0:
+        return "ddos"
+
+    if regex_hit_count(WEB_RCE_PATTERNS, text_value) > 0:
+        return "exploitation"
+
+    if regex_hit_count(WEB_SQLI_PATTERNS, text_value) > 0:
+        return "web_attack"
+
+    if regex_hit_count(WEB_XSS_PATTERNS, text_value) > 0:
+        return "web_attack"
+
+    if regex_hit_count(WEB_TRAVERSAL_PATTERNS, text_value) > 0:
+        return "web_attack"
+
+    if regex_hit_count(WEB_CRED_PATTERNS, text_value) > 0:
+        if regex_hit_count(WEB_SQLI_PATTERNS, text_value) > 0:
+            return "web_attack"
+        return "credential_attack"
+
+    if regex_hit_count(WEB_RECON_PATTERNS, text_value) > 0:
+        return "reconnaissance"
+
+    if text_value.startswith("get /"):
+        return "reconnaissance"
+
+    return "normal"
+
+
+def get_explicit_ssh_command_class(command: str) -> Optional[str]:
+    cmd = (command or "").strip().lower()
     if not cmd:
         return "normal"
 
-    # Treat very common shell commands as normal unless part of a stronger pattern
-    exact_benign = {
-        "ls", "pwd", "whoami", "id", "date", "clear", "history", "hostname", "uname"
-    }
-    benign_prefixes = [
-        "echo ",
-        "cd ",
-        "ls ",
-    ]
+    exact_benign = {"ls", "pwd", "whoami", "id", "date", "clear", "history", "hostname"}
+    benign_prefixes = ["echo ", "cd ", "ls "]
 
     if cmd in exact_benign or any(cmd.startswith(prefix) for prefix in benign_prefixes):
         return "normal"
 
-    destructive_tokens = [
-        "rm -rf", "mkfs", "dd if=", "truncate", "shred"
-    ]
-    exploit_tokens = [
-        "wget ", "curl ", "chmod +x", "./", "| bash", "| sh",
-        "bash -i", "/bin/bash -i", "python -c", "perl -e",
-        "nc -e", "nohup", "reverse shell", "payload", "command injection"
-    ]
-    privilege_tokens = [
-        "sudo", "sudo su", "sudo -i", "su ", "passwd", "useradd", "usermod",
-        "chsh", "chpasswd", "visudo", "/etc/sudoers", "crontab", "systemctl",
-        "service ", "backdoor"
-    ]
-    credential_tokens = [
-        "hydra", "medusa", "patator", "john", "hashcat",
-        "cat /etc/shadow", "shadow", "credentials dump"
-    ]
-    recon_tokens = [
-        "nmap", "masscan", "nikto", "enum4linux", "sqlmap",
-        "scan", "recon", "netstat", "ss ", "ifconfig", "ip a",
-        "whois", "dig ", "nslookup", "hostname -i",
-        "lsb_release", "cat /etc/os-release", "ps aux", "ps -ef",
-        "cat /etc/passwd"
-    ]
-
-    if any(token in cmd for token in destructive_tokens):
+    if regex_hit_count(SSH_DESTRUCTIVE_PATTERNS, cmd) > 0:
         return "destructive_activity"
-    if any(token in cmd for token in exploit_tokens):
-        return "exploitation"
-    if any(token in cmd for token in privilege_tokens):
+
+    if regex_hit_count(SSH_PRIV_PATTERNS, cmd) > 0:
         return "privilege_abuse"
-    if any(token in cmd for token in credential_tokens):
+
+    if regex_hit_count(SSH_CRED_PATTERNS, cmd) > 0:
         return "credential_attack"
-    if any(token in cmd for token in recon_tokens):
+
+    if regex_hit_count(SSH_EXPLOIT_PATTERNS, cmd) > 0:
+        return "exploitation"
+
+    if regex_hit_count(SSH_RECON_PATTERNS, cmd) > 0:
         return "reconnaissance"
+
+    compound_recon_markers = ["whoami", "pwd", "id", "uname", "hostname", "env", "printenv"]
+    recon_hits = sum(1 for marker in compound_recon_markers if marker in cmd)
+    if recon_hits >= 2 and ("&&" in cmd or ";" in cmd):
+        return "reconnaissance"
+
+    return None
+
+
+def classify_ssh_attack_fallback(command: str, lstm_session: Optional[str] = None) -> str:
+    cmd = (command or "").strip().lower()
+
+    explicit = get_explicit_ssh_command_class(cmd)
+    if explicit is not None:
+        return explicit
 
     lstm_label = (lstm_session or "").lower()
     if any(term in lstm_label for term in ["malware", "exploit", "shell", "payload", "backdoor", "exploitation"]):
@@ -365,220 +543,173 @@ def classify_ssh_attack_fallback(command: str, lstm_session: Optional[str] = Non
     return "normal"
 
 
-def classify_web_attack_fallback(activity: str) -> str:
-    text = (activity or "").lower()
+def infer_reason(
+    *,
+    event_type: str,
+    raw_text: str,
+    attack_class: str,
+    decision_source: str,
+    severity: str,
+    policy_escalated: bool,
+) -> str:
+    text_value = (raw_text or "").strip().lower()
+    normalized_type = normalize_event_type(event_type)
+    normalized_attack = (attack_class or "normal").lower()
 
-    if not text.strip():
-        return "normal"
+    if policy_escalated and decision_source == "policy":
+        return "policy_escalation_or_rate_limit_trigger"
 
-    ddos_tokens = [
-        "http flood", "udp flood", "syn flood", "ack flood",
-        "icmp flood", "slowloris", "rate limit exceeded",
-        "too many requests", "traffic spike", "flood"
-    ]
-    credential_tokens = [
-        "post /login", "post /signin", "post /auth", "post /session",
-        "wp-login", "xmlrpc.php", "bruteforce", "brute force",
-        "credential stuffing", "invalid password", "failed login"
-    ]
-    recon_tokens = [
-        "get /admin", "get /administrator", "get /.env", "get /.git",
-        "get /phpmyadmin", "get /wp-admin", "get /manager/html",
-        "head /", "options /", "trace /", "nikto", "scan attempt",
-        "dirb", "gobuster", "ffuf", "enumeration", "probe"
-    ]
-    injection_tokens = [
-        "union select",
-        "' or 1=1",
-        "\" or 1=1",
-        " or 1=1",
-        "sql injection",
-        "<script",
-        "xss",
-        "../",
-        "..\\",
-        "/etc/passwd",
-        "lfi",
-        "rfi",
-        "cmd=",
-        "exec=",
-        "powershell",
-        "shellshock",
-        "jndi:",
-        "${jndi",
-    ]
-    upload_exec_tokens = [
-        "file upload", "webshell", ".php", ".jsp", ".aspx",
-        "cmd.php", "shell.php", "malicious payload"
-    ]
+    if normalized_type == "web":
+        if regex_hit_count(WEB_SQLI_PATTERNS, text_value) > 0:
+            return "sql_injection_attempt"
+        if regex_hit_count(WEB_XSS_PATTERNS, text_value) > 0:
+            return "cross_site_scripting_attempt"
+        if regex_hit_count(WEB_TRAVERSAL_PATTERNS, text_value) > 0:
+            return "path_traversal_or_file_probe"
+        if regex_hit_count(WEB_RCE_PATTERNS, text_value) > 0:
+            return "remote_command_execution_attempt"
+        if regex_hit_count(WEB_RECON_PATTERNS, text_value) > 0:
+            return "endpoint_enumeration"
+        if regex_hit_count(WEB_CRED_PATTERNS, text_value) > 0:
+            return "credential_or_login_attack"
+        if regex_hit_count(WEB_DDOS_PATTERNS, text_value) > 0:
+            return "request_flood_or_rate_abuse"
+        if normalized_attack == "reconnaissance":
+            return "web_endpoint_reconnaissance"
+        if normalized_attack == "web_attack":
+            return "web_injection_pattern"
+        if normalized_attack == "exploitation":
+            return "web_exploitation_attempt"
+        return "routine_web_activity"
 
-    if any(token in text for token in ddos_tokens):
-        return "ddos"
-    if any(token in text for token in upload_exec_tokens):
-        return "exploitation"
-    if any(token in text for token in injection_tokens):
-        return "web_attack"
-    if any(token in text for token in credential_tokens):
-        return "credential_attack"
-    if any(token in text for token in recon_tokens):
-        return "reconnaissance"
+    if normalized_attack == "normal":
+        return "benign_shell_command"
 
-    if text.startswith("get /"):
-        return "reconnaissance"
-    if text.startswith("post /login") or text.startswith("post /signin"):
-        if " or 1=1" in text or "union select" in text:
-            return "web_attack"
-        return "credential_attack"
+    if "sudo su" in text_value or "sudo -i" in text_value or text_value == "su" or text_value.startswith("su "):
+        return "privilege_escalation_attempt"
+    if text_value.startswith("useradd ") or text_value.startswith("usermod ") or "backdoor" in text_value:
+        return "persistence_backdoor_creation"
+    if text_value.startswith("passwd ") or "chpasswd" in text_value:
+        return "credential_reset_or_account_modification"
+    if "cat /etc/shadow" in text_value:
+        return "credential_dump_attempt"
+    if "rm -rf" in text_value or "mkfs" in text_value or "dd if=" in text_value:
+        return "destructive_system_command"
+    if ("wget " in text_value or "curl " in text_value) and ("http://" in text_value or "https://" in text_value):
+        if "chmod +x" in text_value or "./" in text_value or "| bash" in text_value or "| sh" in text_value:
+            return "malicious_download_and_execution"
+        return "suspicious_file_download"
+    if "chmod +x" in text_value:
+        return "payload_permission_change"
+    if "./" in text_value or "| bash" in text_value or "| sh" in text_value or "bash -i" in text_value or "/bin/bash -i" in text_value:
+        return "payload_execution_attempt"
+    if regex_hit_count(SSH_RECON_PATTERNS, text_value) > 0:
+        return "system_information_reconnaissance"
+    if "cat /etc/passwd" in text_value:
+        return "account_enumeration"
+    if normalized_attack == "credential_attack":
+        return "credential_access_attempt"
+    if normalized_attack == "privilege_abuse":
+        return "privileged_account_abuse"
+    if normalized_attack == "reconnaissance":
+        return "system_reconnaissance"
+    if normalized_attack == "exploitation":
+        return "malicious_execution_chain"
+    if normalized_attack == "destructive_activity":
+        return "destructive_activity_detected"
 
-    return "normal"
+    return "suspicious_activity_detected"
 
 
 def score_command_risk(command: str, event_type: str = "ssh") -> float:
-    cmd = (command or "").strip().lower()
+    text_value = (command or "").strip().lower()
     normalized_type = normalize_event_type(event_type)
 
-    if not cmd:
+    if not text_value:
         return 0.0
 
-    # =========================
-    # WEB scoring
-    # =========================
     if normalized_type == "web":
-        score = 0.08
+        score = 0.06
 
-        if cmd.startswith("get /"):
+        if text_value.startswith("get /"):
             score = max(score, 0.18)
 
-        if cmd.startswith("post /login") or cmd.startswith("post /signin") or cmd.startswith("post /auth"):
-            score = max(score, 0.28)
-
-        recon_tokens = [
-            "get /admin", "get /administrator", "get /.env", "get /.git",
-            "get /phpmyadmin", "get /wp-admin", "get /manager/html",
-            "head /", "options /", "trace /", "nikto", "scan attempt",
-            "dirb", "gobuster", "ffuf", "enumeration", "probe"
-        ]
-        injection_tokens = [
-            "union select",
-            "' or 1=1",
-            "\" or 1=1",
-            " or 1=1",
-            "sql injection",
-            "<script",
-            "xss",
-            "../",
-            "..\\",
-            "/etc/passwd",
-            "lfi",
-            "rfi",
-            "cmd=",
-            "exec=",
-            "powershell",
-            "shellshock",
-            "jndi:",
-            "${jndi",
-        ]
-        exploit_tokens = [
-            "webshell", "shell.php", "cmd.php", ".jsp", ".aspx",
-            "malicious payload", "file upload"
-        ]
-        flood_tokens = [
-            "http flood", "udp flood", "syn flood", "ack flood",
-            "icmp flood", "slowloris", "too many requests", "traffic spike", "flood"
-        ]
-
-        if any(token in cmd for token in recon_tokens):
+        if regex_hit_count(WEB_RECON_PATTERNS, text_value) > 0:
             score = max(score, 0.42)
 
-        if any(token in cmd for token in injection_tokens):
-            score = max(score, 0.68)
+        if regex_hit_count(WEB_CRED_PATTERNS, text_value) > 0:
+            score = max(score, 0.35)
 
-        if any(token in cmd for token in exploit_tokens):
-            score = max(score, 0.82)
+        if regex_hit_count(WEB_SQLI_PATTERNS, text_value) > 0:
+            score = max(score, 0.72)
 
-        if any(token in cmd for token in flood_tokens):
-            score = max(score, 0.78)
+        if regex_hit_count(WEB_XSS_PATTERNS, text_value) > 0:
+            score = max(score, 0.65)
+
+        if regex_hit_count(WEB_TRAVERSAL_PATTERNS, text_value) > 0:
+            score = max(score, 0.70)
+
+        if regex_hit_count(WEB_RCE_PATTERNS, text_value) > 0:
+            score = max(score, 0.86)
+
+        if regex_hit_count(WEB_DDOS_PATTERNS, text_value) > 0:
+            score = max(score, 0.80)
 
         return round(clamp01(score), 4)
 
-    # =========================
-    # SSH scoring
-    # =========================
-    exact_benign = {
-        "ls", "pwd", "whoami", "id", "date", "clear", "history", "hostname", "uname"
-    }
-    benign_prefixes = [
-        "echo ",
-        "cd ",
-        "ls ",
-    ]
-    if cmd in exact_benign or any(cmd.startswith(prefix) for prefix in benign_prefixes):
+    exact_benign = {"ls", "pwd", "whoami", "id", "date", "clear", "history", "hostname", "uname"}
+    benign_prefixes = ["echo ", "cd ", "ls "]
+
+    compound_recon_markers = ["whoami", "pwd", "id", "uname", "hostname", "env", "printenv"]
+    recon_hits = sum(1 for marker in compound_recon_markers if marker in text_value)
+    if recon_hits >= 2 and ("&&" in text_value or ";" in text_value):
+        return 0.30
+
+    if text_value in exact_benign or any(text_value.startswith(prefix) for prefix in benign_prefixes):
         return 0.03
 
-    # Mild information-gathering that should stay LOW in demo
-    low_recon_tokens = [
-        "uname -a", "netstat", "ss ", "ifconfig", "ip a",
-        "ps aux", "ps -ef", "env", "printenv", "cat /etc/os-release"
-    ]
-    if any(token in cmd for token in low_recon_tokens):
-        return 0.22
+    score = 0.12
 
-    if "cat /etc/passwd" in cmd:
-        return 0.38
+    if regex_hit_count(SSH_RECON_PATTERNS, text_value) > 0:
+        score = max(score, 0.24)
 
-    # Privilege escalation should be clearly stronger
-    if "sudo su" in cmd or "sudo -i" in cmd or cmd == "su" or cmd.startswith("su "):
-        return 0.72
+    if "cat /etc/passwd" in text_value:
+        score = max(score, 0.38)
 
-    if cmd.startswith("useradd ") or cmd.startswith("usermod ") or " backdoor" in cmd:
-        return 0.88
+    if regex_hit_count(SSH_PRIV_PATTERNS, text_value) > 0:
+        score = max(score, 0.58)
 
-    if cmd.startswith("passwd ") or "chpasswd" in cmd:
-        return 0.78
+    if "sudo su" in text_value or "sudo -i" in text_value or text_value == "su" or text_value.startswith("su "):
+        score = max(score, 0.72)
 
-    if "/etc/sudoers" in cmd or "visudo" in cmd:
-        return 0.90
+    if text_value.startswith("useradd ") or text_value.startswith("usermod "):
+        score = max(score, 0.88)
 
-    if "cat /etc/shadow" in cmd:
-        return 0.95
+    if "passwd " in text_value or "chpasswd" in text_value:
+        score = max(score, 0.86)
 
-    score = 0.20
+    if "/etc/sudoers" in text_value or "visudo" in text_value:
+        score = max(score, 0.90)
 
-    medium_tokens = [
-        "scp", "ftp", "telnet",
-        "ssh ", "curl ", "wget ", "nc ", "netcat", "nmap", "masscan",
-        "hydra", "sqlmap", "nikto", "enum4linux", "scan", "recon"
-    ]
-    suspicious_tokens = [
-        "http://", "https://", "/tmp/", "base64", "bash -c", "sh -c",
-        "sudo", "nohup", "systemctl", "crontab", "useradd",
-        "../", "payload", "suspicious", "passwd ", "backdoor"
-    ]
-    critical_tokens = [
-        "chmod +x", "./", "bash -i", "/bin/bash -i", "python -c", "perl -e",
-        "rm -rf", "mkfs", "dd if=", "cat /etc/shadow", "nc -e",
-        "reverse shell", "command injection"
-    ]
+    if "cat /etc/shadow" in text_value:
+        score = max(score, 0.95)
 
-    for token in medium_tokens:
-        if token in cmd:
-            score += 0.18
+    if regex_hit_count(SSH_CRED_PATTERNS, text_value) > 0:
+        score = max(score, 0.68)
 
-    for token in suspicious_tokens:
-        if token in cmd:
-            score += 0.12
+    if regex_hit_count(SSH_EXPLOIT_PATTERNS, text_value) > 0:
+        score = max(score, 0.62)
 
-    for token in critical_tokens:
-        if token in cmd:
-            score += 0.28
+    if regex_hit_count(SSH_DESTRUCTIVE_PATTERNS, text_value) > 0:
+        score = max(score, 0.95)
 
-    has_download = any(token in cmd for token in ["wget ", "curl ", "http://", "https://"])
-    has_permission_change = "chmod +x" in cmd
-    has_direct_exec = any(token in cmd for token in ["./", "bash ", "sh ", "python -c", "perl -e", "nohup"])
-    has_pipe_exec = ("| bash" in cmd) or ("| sh" in cmd)
-    has_reverse_shell = any(token in cmd for token in ["nc -e", "/bin/bash -i", "bash -i", "python -c", "perl -e", "reverse shell"])
-    has_destructive = any(token in cmd for token in ["rm -rf", "mkfs", "dd if="])
-    has_credential_access = "cat /etc/shadow" in cmd
+    has_download = bool(re.search(r"(?i)\b(wget|curl)\b", text_value)) and bool(re.search(r"(?i)https?://", text_value))
+    has_permission_change = "chmod +x" in text_value
+    has_direct_exec = any(token in text_value for token in ["./", "bash ", "sh ", "python -c", "perl -e", "nohup"])
+    has_pipe_exec = "| bash" in text_value or "| sh" in text_value
+    has_reverse_shell = any(token in text_value for token in ["nc -e", "/bin/bash -i", "bash -i", "python -c", "perl -e", "reverse shell"])
+    has_destructive = regex_hit_count(SSH_DESTRUCTIVE_PATTERNS, text_value) > 0
+    has_credential_access = "cat /etc/shadow" in text_value
 
     if has_download and has_permission_change and has_direct_exec:
         return 0.96
@@ -591,129 +722,97 @@ def score_command_risk(command: str, event_type: str = "ssh") -> float:
     if has_credential_access:
         return 0.95
 
-    suspicious_download_names = [
-        "malware.sh", "bot.sh", "payload.sh", "miner.sh", "dropper.sh"
-    ]
-
+    suspicious_download_names = ["malware.sh", "bot.sh", "payload.sh", "miner.sh", "dropper.sh"]
     if has_download:
-        score = max(score, 0.52)
+        score = max(score, 0.54)
 
-    if any(token in cmd for token in suspicious_download_names):
-        score = max(score, 0.60)
+    if any(token in text_value for token in suspicious_download_names):
+        score = max(score, 0.64)
 
     if has_download and has_direct_exec:
-        score += 0.22
-    if "&&" in cmd:
-        score += 0.06
-    if ";" in cmd:
-        score += 0.04
+        score = max(score, 0.84)
+
+    if "&&" in text_value:
+        score += 0.05
+    if ";" in text_value:
+        score += 0.03
 
     return round(clamp01(score), 4)
 
 
 def emergency_override_severity(command: str, event_type: str = "ssh") -> str:
-    """
-    Keep only a very small hard override list for truly dangerous payloads.
-    Everything else should be score/model driven.
-    """
-    cmd = (command or "").strip().lower()
+    text_value = (command or "").strip().lower()
     normalized_type = normalize_event_type(event_type)
 
-    if not cmd:
+    if not text_value:
         return "LOW"
 
     if normalized_type == "web":
-        critical_web = [
-            "shellshock",
-            "${jndi",
-            "jndi:",
-            "webshell",
-            "shell.php",
-            "cmd.php",
-            "command injection",
-        ]
-        medium_web = [
-            "union select",
-            "' or 1=1",
-            "\" or 1=1",
-            " or 1=1",
-            "<script",
-            "../",
-            "..\\",
-            "/etc/passwd",
-            "lfi",
-            "rfi",
-        ]
-        if any(token in cmd for token in critical_web):
+        if regex_hit_count(WEB_RCE_PATTERNS, text_value) > 0:
             return "HIGH"
-        if any(token in cmd for token in medium_web):
+        if regex_hit_count(WEB_SQLI_PATTERNS, text_value) > 0:
             return "MEDIUM"
+        if regex_hit_count(WEB_TRAVERSAL_PATTERNS, text_value) > 0:
+            return "MEDIUM"
+        if regex_hit_count(WEB_XSS_PATTERNS, text_value) > 0:
+            return "MEDIUM"
+        if regex_hit_count(WEB_DDOS_PATTERNS, text_value) > 0:
+            return "HIGH"
         return "LOW"
 
-    critical_ssh = [
-        "nc -e",
-        "/bin/bash -i",
-        "bash -i",
-        "reverse shell",
-        "rm -rf",
-        "mkfs",
-        "dd if=",
-        "cat /etc/shadow",
-    ]
+    if regex_hit_count(SSH_DESTRUCTIVE_PATTERNS, text_value) > 0:
+        return "HIGH"
 
-    high_privilege = [
-        "useradd ",
-        "usermod ",
-        "visudo",
-        "/etc/sudoers",
-        "backdoor",
-    ]
-
-    medium_privilege = [
-        "sudo su",
-        "sudo -i",
-        "passwd ",
-        "chpasswd",
-        "crontab",
-        "systemctl ",
-        "service ",
-    ]
-
-    if any(token in cmd for token in critical_ssh):
+    if "cat /etc/shadow" in text_value:
         return "HIGH"
 
     if (
-        ("wget " in cmd or "curl " in cmd or "http://" in cmd or "https://" in cmd)
-        and "chmod +x" in cmd
-        and "./" in cmd
+        ("wget " in text_value or "curl " in text_value or "http://" in text_value or "https://" in text_value)
+        and "chmod +x" in text_value
+        and "./" in text_value
     ):
         return "HIGH"
 
-    if "| bash" in cmd or "| sh" in cmd:
+    if "| bash" in text_value or "| sh" in text_value:
         return "HIGH"
 
-    if any(token in cmd for token in high_privilege):
+    if any(token in text_value for token in ["nc -e", "/bin/bash -i", "bash -i", "reverse shell"]):
         return "HIGH"
 
-    if any(token in cmd for token in medium_privilege):
+    if any(token in text_value for token in ["useradd ", "usermod ", "visudo", "/etc/sudoers", "backdoor"]):
+        return "HIGH"
+
+    if any(token in text_value for token in ["sudo su", "sudo -i", "passwd ", "chpasswd", "crontab", "systemctl ", "service "]):
         return "MEDIUM"
 
-    suspicious_download = [
-        "wget ",
-        "curl ",
-        "http://",
-        "https://",
-        "malware.sh",
-        "bot.sh",
-        "payload.sh",
-        "miner.sh",
-        "dropper.sh",
-    ]
-
-    if any(token in cmd for token in suspicious_download):
+    if any(token in text_value for token in ["wget ", "curl ", "http://", "https://", "malware.sh", "bot.sh", "payload.sh", "miner.sh", "dropper.sh"]):
         return "MEDIUM"
 
-    if "cat /etc/passwd" in cmd:
+    if "cat /etc/passwd" in text_value:
+        return "MEDIUM"
+
+    return "LOW"
+
+
+def severity_floor_from_attack_class(attack_class: str, command_score: float, event_type: str) -> str:
+    attack = (attack_class or "normal").lower()
+    normalized_type = normalize_event_type(event_type)
+
+    if attack in {"destructive_activity", "exploitation"}:
+        return "HIGH"
+
+    if attack in {"privilege_abuse", "ddos"} and command_score >= 0.55:
+        return "HIGH"
+
+    if attack in {"credential_attack", "web_attack", "reconnaissance", "privilege_abuse"}:
+        return "MEDIUM"
+
+    if normalized_type == "web" and command_score >= 0.70:
+        return "HIGH"
+
+    if command_score >= 0.88:
+        return "HIGH"
+    if command_score >= 0.40:
         return "MEDIUM"
 
     return "LOW"
@@ -742,15 +841,15 @@ class RateLimiter:
         self.requests: Dict[str, deque] = defaultdict(deque)
 
     def check(self, ip: str) -> Dict[str, Any]:
-        now = time.time()
+        now_value = time.time()
         q = self.requests[ip]
 
-        while q and (now - q[0] > self.window_seconds):
+        while q and (now_value - q[0] > self.window_seconds):
             q.popleft()
 
-        q.append(now)
-
+        q.append(now_value)
         blocked = len(q) > self.max_requests
+
         return {
             "count": len(q),
             "window_seconds": self.window_seconds,
@@ -825,11 +924,7 @@ def rebuild_bad_actor_state_from_db(db: Session) -> None:
     global bad_actors
     bad_actors.clear()
 
-    events = (
-        db.query(Event)
-        .order_by(Event.timestamp.asc(), Event.id.asc())
-        .all()
-    )
+    events = db.query(Event).order_by(Event.timestamp.asc(), Event.id.asc()).all()
 
     for event in events:
         source_ip = (event.source_ip or "").strip()
@@ -948,7 +1043,7 @@ async def lifespan(app_: FastAPI):
             "type": "ssh_sequence_lstm",
         }
 
-    app_state["hybrid_info"] = "Model-dominant hybrid engine active: LSTM + CICIoT + fallback command-risk"
+    app_state["hybrid_info"] = "Adaptive confidence-aware hybrid engine active: LSTM + CICIoT + rule fallback + severity floor"
     print("Honeypot backend ready")
 
     yield
@@ -1050,7 +1145,7 @@ def predict_ciciot_from_dict(feature_dict: Dict[str, Any]) -> Dict[str, Any]:
     elif any(token in attack_lower for token in ["dos", "ddos"]):
         score = max(confidence, 0.75)
     elif any(token in attack_lower for token in ["scan", "recon", "bruteforce"]):
-        score = max(confidence * 0.9, 0.60)
+        score = max(confidence * 0.90, 0.60)
     else:
         score = max(confidence * 0.85, 0.45)
 
@@ -1066,10 +1161,7 @@ def map_lstm_label_to_score(label: str, prob: float) -> float:
 
     benign_terms = ["benign", "normal", "harmless"]
     medium_terms = ["scan", "recon", "reconnaissance", "suspicious", "enumeration"]
-    high_terms = [
-        "malware", "payload", "exploit", "exploitation", "shell",
-        "bruteforce", "backdoor", "attack", "privilege", "abuse"
-    ]
+    high_terms = ["malware", "payload", "exploit", "exploitation", "shell", "bruteforce", "backdoor", "attack", "privilege", "abuse"]
 
     if any(term in label_lower for term in benign_terms):
         return 0.05 * max(prob, 0.5)
@@ -1081,7 +1173,17 @@ def map_lstm_label_to_score(label: str, prob: float) -> float:
     return 0.25 + 0.30 * prob
 
 
-def predict_lstm_from_session(session_id: str, command: str) -> Dict[str, Any]:
+def predict_lstm_from_session(session_id: str, command: str, event_type: str = "ssh") -> Dict[str, Any]:
+    normalized_type = normalize_event_type(event_type)
+
+    if normalized_type != "ssh":
+        return {
+            "lstm_session": "NotUsedForWeb",
+            "session_length": 0,
+            "lstm_score": 0.0,
+            "lstm_confidence": 0.0,
+        }
+
     session_commands[session_id].append(command)
     sequence = session_commands[session_id][-100:]
 
@@ -1128,6 +1230,88 @@ def predict_lstm_from_session(session_id: str, command: str) -> Dict[str, Any]:
         }
 
 
+def compute_dynamic_weights(
+    *,
+    event_type: str,
+    command_score: float,
+    lstm_confidence: float,
+    ciciot_confidence: float,
+    has_ciciot: bool,
+) -> Dict[str, float]:
+    normalized_type = normalize_event_type(event_type)
+
+    w_lstm = 0.25
+    w_ciciot = 0.0
+    w_command = 0.75 if not has_ciciot else 0.45
+
+    if lstm_confidence >= LSTM_HIGH_CONFIDENCE:
+        w_lstm = 0.45
+    elif lstm_confidence >= LSTM_MEDIUM_CONFIDENCE:
+        w_lstm = 0.30
+    else:
+        w_lstm = 0.20
+
+    if has_ciciot:
+        if ciciot_confidence >= CICIOT_HIGH_CONFIDENCE:
+            w_ciciot = 0.35
+        elif ciciot_confidence >= CICIOT_MEDIUM_CONFIDENCE:
+            w_ciciot = 0.25
+        else:
+            w_ciciot = 0.15
+    else:
+        w_ciciot = 0.0
+
+    if normalized_type == "ssh":
+        if command_score >= 0.85:
+            w_command = 0.50
+        elif command_score >= 0.55:
+            w_command = 0.40
+        else:
+            w_command = 0.35 if has_ciciot else 0.55
+    else:
+        if command_score >= 0.80:
+            w_command = 0.50
+        elif command_score >= 0.60:
+            w_command = 0.42
+        else:
+            w_command = 0.35 if has_ciciot else 0.60
+
+    total = w_lstm + w_ciciot + w_command
+    if total <= 0:
+        return {"lstm": 0.3, "ciciot": 0.0, "command": 0.7}
+
+    return {
+        "lstm": round(w_lstm / total, 4),
+        "ciciot": round(w_ciciot / total, 4),
+        "command": round(w_command / total, 4),
+    }
+
+
+def derive_anomaly_boost(
+    *,
+    event_type: str,
+    command_score: float,
+    lstm_confidence: float,
+    ciciot_confidence: float,
+    attack_class_hint: Optional[str],
+) -> float:
+    normalized_type = normalize_event_type(event_type)
+    hint = (attack_class_hint or "normal").lower()
+
+    max_model_conf = max(lstm_confidence, ciciot_confidence)
+
+    if max_model_conf < 0.35 and command_score >= 0.70:
+        if hint in {"exploitation", "destructive_activity", "privilege_abuse", "web_attack", "credential_attack"}:
+            return 0.10
+        if hint in {"reconnaissance", "ddos"}:
+            return 0.06
+
+    if normalized_type == "web" and command_score >= 0.78:
+        return 0.05
+
+    return 0.0
+
+
 def pick_model_first_attack_class(
     *,
     event_type: str,
@@ -1142,13 +1326,27 @@ def pick_model_first_attack_class(
 ) -> Tuple[str, str]:
     """
     Returns: (attack_class, source)
-    source in {"lstm", "ciciot", "hybrid", "fallback_rule"}
+    source in {"lstm", "ciciot", "hybrid", "fallback_rule", "command"}
     """
     normalized_type = normalize_event_type(event_type)
     normalized_lstm = normalize_attack_label(lstm_session)
     normalized_ciciot = normalize_attack_label(ciciot_attack)
 
     if normalized_type == "ssh":
+        explicit_class = get_explicit_ssh_command_class(raw_text)
+
+        if explicit_class in {"destructive_activity", "privilege_abuse"}:
+            return explicit_class, "command"
+
+        if explicit_class == "credential_attack" and command_score >= 0.35:
+            return explicit_class, "command"
+
+        if explicit_class == "exploitation" and command_score >= 0.52 and lstm_confidence < LSTM_HIGH_CONFIDENCE:
+            return explicit_class, "command"
+
+        if explicit_class == "reconnaissance" and command_score >= 0.20 and lstm_confidence < LSTM_HIGH_CONFIDENCE:
+            return explicit_class, "command"
+
         if normalized_lstm and normalized_lstm != "normal" and lstm_confidence >= LSTM_HIGH_CONFIDENCE:
             return normalized_lstm, "lstm"
 
@@ -1180,11 +1378,14 @@ def pick_model_first_attack_class(
     if normalized_ciciot and normalized_ciciot != "normal" and ciciot_confidence >= CICIOT_MEDIUM_CONFIDENCE:
         return normalized_ciciot, "hybrid"
 
-    if normalized_lstm and normalized_lstm != "normal" and lstm_confidence >= LSTM_HIGH_CONFIDENCE and threat_score >= 0.60:
+    fallback = classify_web_attack_fallback(raw_text)
+    if fallback != "normal":
+        return fallback, "fallback_rule"
+
+    if normalized_lstm and normalized_lstm != "normal" and lstm_confidence >= LSTM_HIGH_CONFIDENCE and threat_score >= 0.65:
         return normalized_lstm, "lstm"
 
-    fallback = classify_web_attack_fallback(raw_text)
-    return fallback, "fallback_rule"
+    return "normal", "fallback_rule"
 
 
 def fuse_hybrid_decision(
@@ -1195,7 +1396,11 @@ def fuse_hybrid_decision(
 ) -> Dict[str, Any]:
     normalized_type = normalize_event_type(event_type)
 
-    lstm_result = predict_lstm_from_session(session_id=session_id, command=command)
+    lstm_result = predict_lstm_from_session(
+        session_id=session_id,
+        command=command,
+        event_type=normalized_type,
+    )
     command_score = round(score_command_risk(command, event_type=normalized_type), 4)
 
     ciciot_result = {
@@ -1203,6 +1408,7 @@ def fuse_hybrid_decision(
         "ciciot_confidence": 0.0,
         "ciciot_score": 0.0,
     }
+
     if ciciot_features:
         try:
             ciciot_result = predict_ciciot_from_dict(ciciot_features)
@@ -1211,23 +1417,41 @@ def fuse_hybrid_decision(
         except Exception:
             pass
 
-    lstm_score = float(lstm_result["lstm_score"])
+    lstm_score = float(lstm_result.get("lstm_score", 0.0))
     lstm_confidence = float(lstm_result.get("lstm_confidence", 0.0))
-    ciciot_score = float(ciciot_result["ciciot_score"])
+    ciciot_score = float(ciciot_result.get("ciciot_score", 0.0))
     ciciot_confidence = float(ciciot_result.get("ciciot_confidence", 0.0))
+    has_ciciot = bool(ciciot_features)
 
-    if normalized_type == "ssh":
-        if ciciot_features:
-            threat_score = (0.50 * lstm_score) + (0.35 * ciciot_score) + (0.15 * command_score)
-        else:
-            threat_score = (0.75 * lstm_score) + (0.25 * command_score)
-    else:
-        if ciciot_features:
-            threat_score = (0.65 * ciciot_score) + (0.20 * command_score) + (0.15 * lstm_score)
-        else:
-            threat_score = (0.45 * lstm_score) + (0.55 * command_score)
+    provisional_class = (
+        classify_ssh_attack_fallback(command, lstm_session=lstm_result.get("lstm_session"))
+        if normalized_type == "ssh"
+        else classify_web_attack_fallback(command)
+    )
 
-    threat_score = round(clamp01(threat_score), 4)
+    weights = compute_dynamic_weights(
+        event_type=normalized_type,
+        command_score=command_score,
+        lstm_confidence=lstm_confidence,
+        ciciot_confidence=ciciot_confidence,
+        has_ciciot=has_ciciot,
+    )
+
+    raw_threat_score = (
+        weights["lstm"] * lstm_score
+        + weights["ciciot"] * ciciot_score
+        + weights["command"] * command_score
+    )
+
+    anomaly_boost = derive_anomaly_boost(
+        event_type=normalized_type,
+        command_score=command_score,
+        lstm_confidence=lstm_confidence,
+        ciciot_confidence=ciciot_confidence,
+        attack_class_hint=provisional_class,
+    )
+
+    threat_score = round(clamp01(raw_threat_score + anomaly_boost), 4)
 
     attack_class, class_source = pick_model_first_attack_class(
         event_type=normalized_type,
@@ -1242,10 +1466,20 @@ def fuse_hybrid_decision(
     )
 
     base_severity = severity_from_score(threat_score)
-
     emergency_floor = emergency_override_severity(command, event_type=normalized_type)
-    final_severity = max_severity(base_severity, emergency_floor)
+    class_floor = severity_floor_from_attack_class(
+        attack_class=attack_class,
+        command_score=command_score,
+        event_type=normalized_type,
+    )
+    floor_severity = max_severity(emergency_floor, class_floor)
+    final_severity = max_severity(base_severity, floor_severity)
     policy_escalated = final_severity != base_severity
+
+    if final_severity == "HIGH" and threat_score < 0.75:
+        threat_score = round(max(threat_score, 0.75, command_score, lstm_score, ciciot_score), 4)
+    elif final_severity == "MEDIUM" and threat_score < 0.40:
+        threat_score = round(max(threat_score, 0.40, command_score * 0.8), 4)
 
     decision_source = class_source
     if class_source == "fallback_rule":
@@ -1260,15 +1494,28 @@ def fuse_hybrid_decision(
         else:
             decision_source = "command"
 
+    reason = infer_reason(
+        event_type=normalized_type,
+        raw_text=command,
+        attack_class=attack_class,
+        decision_source=decision_source,
+        severity=final_severity,
+        policy_escalated=policy_escalated,
+    )
+
     return {
         "severity": final_severity,
         "threat_score": threat_score,
         "attack_class": attack_class,
+        "reason": reason,
         "decision_source": decision_source,
-        "fusion_method": "model_first_hybrid_lstm_ciciot_command_fallback",
+        "fusion_method": "adaptive_confidence_hybrid_lstm_ciciot_command_fallback",
         "base_severity": base_severity,
-        "floor_severity": emergency_floor,
+        "floor_severity": floor_severity,
         "policy_escalated": policy_escalated,
+        "fusion_weights": weights,
+        "hybrid_weights": weights,
+        "anomaly_boost": round(anomaly_boost, 4),
         "command_score": command_score,
         **lstm_result,
         **ciciot_result,
@@ -1300,6 +1547,7 @@ def serialize_event(event: Event) -> Dict[str, Any]:
         "event_type": normalize_event_type(event.event_type),
         "command": event.command or "",
         "attack_class": event.attack_class or "normal",
+        "reason": event.reason or "benign_activity",
         "severity": normalize_severity(event.severity),
         "threat_score": round(float(event.threat_score or 0.0), 4),
         "lstm_session": event.lstm_session or "Unknown",
@@ -1309,7 +1557,7 @@ def serialize_event(event: Event) -> Dict[str, Any]:
         "ciciot_confidence": round(float(event.ciciot_confidence or 0.0), 4),
         "ciciot_score": round(float(event.ciciot_score or 0.0), 4),
         "decision_source": event.decision_source or "rules",
-        "fusion_method": event.fusion_method or "hybrid_lstm_ciciot_command",
+        "fusion_method": event.fusion_method or "adaptive_hybrid_lstm_ciciot_command",
         "base_severity": normalize_severity(event.base_severity or "LOW"),
         "floor_severity": normalize_severity(event.floor_severity or "LOW"),
         "policy_escalated": bool(event.policy_escalated),
@@ -1396,6 +1644,7 @@ async def ingest_event_common(
         hybrid["base_severity"] = hybrid.get("base_severity", hybrid["severity"])
         hybrid["floor_severity"] = max_severity(hybrid.get("floor_severity", "LOW"), "HIGH")
         hybrid["decision_source"] = "policy"
+        hybrid["reason"] = "policy_escalation_or_rate_limit_trigger"
 
     actor_preview = update_bad_actor_state(
         ip,
@@ -1421,6 +1670,7 @@ async def ingest_event_common(
         event_type=normalized_type,
         command=raw_text,
         attack_class=hybrid["attack_class"],
+        reason=hybrid["reason"],
         severity=normalize_severity(hybrid["severity"]),
         threat_score=float(hybrid["threat_score"]),
         lstm_session=hybrid["lstm_session"],
@@ -1442,6 +1692,8 @@ async def ingest_event_common(
     db.refresh(event)
 
     event_payload = serialize_event(event)
+    event_payload["fusion_weights"] = hybrid.get("fusion_weights", {})
+    event_payload["anomaly_boost"] = hybrid.get("anomaly_boost", 0.0)
     event_payload["rate_limit_blocked"] = rl_result["blocked"]
     event_payload["rate_limit_count"] = rl_result["count"]
     event_payload["bad_actor_enforcement"] = actor_preview["enforcement"]
@@ -1493,7 +1745,7 @@ def predict_ciciot_route(payload: CICIoTRequest):
 @app.post("/predict_lstm")
 def predict_lstm_route(payload: LSTMPredictRequest):
     model_session_id = build_model_session_id("ssh", payload.session_id)
-    return predict_lstm_from_session(model_session_id, payload.command)
+    return predict_lstm_from_session(model_session_id, payload.command, event_type="ssh")
 
 
 @app.post("/debug_lstm")

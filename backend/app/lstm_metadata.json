@@ -1,6 +1,6 @@
 {
   "version": "LSTM v9",
-  "accuracy": 0.9907739162445068,
+  "accuracy": 0.9912888407707214,
   "classes": 5,
   "class_names": [
     "exploitation",

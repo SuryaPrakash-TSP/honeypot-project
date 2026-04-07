@@ -1,5 +1,4 @@
 import json
-import re
 import numpy as np
 import pandas as pd
 import joblib
@@ -31,15 +30,14 @@ model = load_model(MODEL_PATH)
 tokenizer = joblib.load(TOKENIZER_PATH)
 label_encoder = joblib.load(LABEL_ENCODER_PATH)
 
-df = pd.read_parquet(PARQUET_PATH)[["full_session", "Set_Fingerprint"]].dropna().copy()
-df["full_session"] = df["full_session"].astype(str).str.strip()
-df["Set_Fingerprint"] = df["Set_Fingerprint"].astype(str).str.strip()
 
-def parse_tactics(raw_label: str):
-    return re.findall(r"'([^']+)'", raw_label)
-
-def map_fingerprint(raw_label: str):
-    tactics = parse_tactics(raw_label)
+def map_fingerprint(fingerprint):
+    if isinstance(fingerprint, np.ndarray):
+        tactics = {str(x).strip() for x in fingerprint.tolist()}
+    elif isinstance(fingerprint, (list, tuple, set)):
+        tactics = {str(x).strip() for x in fingerprint}
+    else:
+        tactics = {str(fingerprint).strip()}
 
     if "Execution" in tactics:
         return label_mapping["Execution"]
@@ -52,12 +50,14 @@ def map_fingerprint(raw_label: str):
     else:
         return label_mapping["fallback"]
 
+
+df = pd.read_parquet(PARQUET_PATH)[["full_session", "Set_Fingerprint"]].dropna().copy()
+df["full_session"] = df["full_session"].astype(str).str.lower().str.strip()
 df["mapped_label"] = df["Set_Fingerprint"].apply(map_fingerprint)
 
 print("\n=== MAPPED LABEL COUNTS ===")
 print(df["mapped_label"].value_counts())
 
-# Keep only labels known to the model
 known = set(label_encoder.classes_)
 df = df[df["mapped_label"].isin(known)].copy()
 
@@ -66,7 +66,7 @@ print(list(label_encoder.classes_))
 print(f"Rows used for evaluation: {len(df)}")
 
 X_seq = tokenizer.texts_to_sequences(df["full_session"].tolist())
-X = pad_sequences(X_seq, maxlen=MAX_LEN)
+X = pad_sequences(X_seq, maxlen=MAX_LEN, padding="post", truncating="post")
 
 y_true = label_encoder.transform(df["mapped_label"])
 y_pred_probs = model.predict(X, batch_size=64, verbose=1)

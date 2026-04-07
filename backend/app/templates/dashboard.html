@@ -22,13 +22,11 @@
             --accent: #24c4ff;
             --accent-2: #7c5cff;
             --accent-soft: rgba(36, 196, 255, 0.12);
-            --success: #22c55e;
             --success-soft: rgba(34, 197, 94, 0.14);
-            --warning: #f59e0b;
             --warning-soft: rgba(245, 158, 11, 0.14);
-            --danger: #ef4444;
             --danger-soft: rgba(239, 68, 68, 0.14);
             --purple-soft: rgba(124, 92, 255, 0.14);
+            --info-soft: rgba(56, 189, 248, 0.14);
             --shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
             --radius: 16px;
             --radius-sm: 12px;
@@ -57,6 +55,7 @@
             --warning-soft: rgba(245, 158, 11, 0.12);
             --danger-soft: rgba(239, 68, 68, 0.10);
             --purple-soft: rgba(124, 58, 237, 0.10);
+            --info-soft: rgba(56, 189, 248, 0.10);
             --shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
         }
 
@@ -67,13 +66,8 @@
             --table-max-h: 60vh;
         }
 
-        * {
-            box-sizing: border-box;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
 
         body {
             margin: 0;
@@ -467,13 +461,8 @@
             will-change: scroll-position;
         }
 
-        .table-wrap {
-            max-height: var(--table-max-h);
-        }
-
-        .mini-table-wrap {
-            max-height: 32vh;
-        }
+        .table-wrap { max-height: var(--table-max-h); }
+        .mini-table-wrap { max-height: 32vh; }
 
         .events-table,
         .mini-table {
@@ -481,13 +470,8 @@
             border-collapse: collapse;
         }
 
-        .events-table {
-            min-width: 1180px;
-        }
-
-        .mini-table {
-            min-width: 720px;
-        }
+        .events-table { min-width: 1180px; }
+        .mini-table { min-width: 720px; }
 
         th,
         td {
@@ -587,23 +571,16 @@
 
         .badge-monitor {
             color: #93c5fd;
-            background: rgba(56,189,248,0.14);
+            background: var(--info-soft);
             border-color: rgba(56,189,248,0.22);
-        }
-
-        .badge-escalated,
-        .badge-rate-limited,
-        .badge-watchlisted {
-            color: #fca5a5;
-            background: var(--danger-soft);
-            border-color: rgba(239,68,68,0.22);
         }
 
         .badge-source-hybrid,
         .badge-source-lstm,
         .badge-source-command,
         .badge-source-policy,
-        .badge-source-rules {
+        .badge-source-rules,
+        .badge-source-ciciot {
             color: #d8b4fe;
             background: var(--purple-soft);
             border-color: rgba(124,92,255,0.22);
@@ -620,7 +597,7 @@
         .badge-attack-scan,
         .badge-attack-web-attack {
             color: #93c5fd;
-            background: rgba(56,189,248,0.14);
+            background: var(--info-soft);
             border-color: rgba(56,189,248,0.22);
         }
 
@@ -629,11 +606,18 @@
         .badge-attack-dos,
         .badge-attack-bruteforce,
         .badge-attack-privilege-abuse,
-        .badge-attack-destructive-or-credential-access,
-        .badge-attack-credential-attack {
+        .badge-attack-destructive-activity,
+        .badge-attack-credential-attack,
+        .badge-attack-botnet-activity {
             color: #fca5a5;
             background: var(--danger-soft);
             border-color: rgba(239,68,68,0.22);
+        }
+
+        .badge-reason {
+            color: #c4b5fd;
+            background: rgba(139, 92, 246, 0.12);
+            border-color: rgba(139, 92, 246, 0.22);
         }
 
         .row-actions {
@@ -669,9 +653,23 @@
         }
 
         .details-panel {
-            padding: 12px;
+            padding: 14px;
             display: grid;
-            gap: 10px;
+            gap: 12px;
+        }
+
+        .details-topline {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .details-section-title {
+            font-size: 11px;
+            font-weight: 900;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         .details-grid {
@@ -702,6 +700,77 @@
             font-weight: 900;
             word-break: break-word;
             line-height: 1.4;
+        }
+
+        .detail-muted {
+            color: var(--muted);
+            font-weight: 700;
+        }
+
+        .decision-hero {
+            border: 1px solid rgba(124, 92, 255, 0.22);
+            background: linear-gradient(180deg, rgba(124, 92, 255, 0.10), rgba(255,255,255,0.02));
+            border-radius: 12px;
+            padding: 12px;
+        }
+
+        .decision-hero-grid {
+            display: grid;
+            grid-template-columns: 1.3fr 1fr 1fr 1fr;
+            gap: 8px;
+        }
+
+        .decision-hero-box {
+            border: 1px solid var(--border);
+            background: var(--panel-soft);
+            border-radius: 10px;
+            padding: 10px;
+            min-width: 0;
+        }
+
+        .decision-hero-label {
+            font-size: 9px;
+            color: var(--muted);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 800;
+        }
+
+        .decision-hero-value {
+            font-size: 13px;
+            font-weight: 900;
+            line-height: 1.35;
+            word-break: break-word;
+        }
+
+        .score-strip {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .score-strip-box {
+            border: 1px solid var(--border);
+            background: var(--panel-soft);
+            border-radius: 10px;
+            padding: 10px;
+            text-align: left;
+        }
+
+        .score-strip-label {
+            font-size: 9px;
+            color: var(--muted);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 800;
+        }
+
+        .score-strip-value {
+            font-size: 14px;
+            font-weight: 900;
+            line-height: 1.2;
         }
 
         .detail-command,
@@ -798,6 +867,44 @@
 
         .health-meta strong {
             color: var(--text);
+        }
+
+        .top-attacker-hero {
+            margin: 10px;
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg, rgba(239, 68, 68, 0.10), rgba(255,255,255,0.02));
+            border-radius: 14px;
+            padding: 12px;
+        }
+
+        .top-attacker-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .top-attacker-stat {
+            border: 1px solid var(--border);
+            background: var(--panel-soft);
+            border-radius: 12px;
+            padding: 10px;
+            min-width: 0;
+        }
+
+        .top-attacker-label {
+            font-size: 10px;
+            color: var(--muted);
+            margin-bottom: 5px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .top-attacker-value {
+            font-size: 15px;
+            font-weight: 900;
+            line-height: 1.2;
+            word-break: break-word;
         }
 
         .empty-cell {
@@ -909,9 +1016,7 @@
         }
 
         @media (max-width: 1480px) {
-            .kpi-grid {
-                grid-template-columns: repeat(3, minmax(0, 1fr));
-            }
+            .kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
         }
 
         @media (max-width: 1240px) {
@@ -938,35 +1043,31 @@
 
             .hero-mini-stats,
             .details-grid,
-            .alert-grid {
+            .alert-grid,
+            .decision-hero-grid,
+            .score-strip {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
         }
 
         @media (max-width: 760px) {
-            .shell {
-                padding: 10px;
-            }
-
-            .toolbar {
-                align-items: stretch;
-            }
+            .shell { padding: 10px; }
+            .toolbar { align-items: stretch; }
 
             .toolbar-actions,
-            .section-actions {
-                width: 100%;
-            }
+            .section-actions { width: 100%; }
 
             .toolbar-actions .btn,
             .section-actions .btn,
-            .hero-actions .btn {
-                flex: 1 1 auto;
-            }
+            .hero-actions .btn { flex: 1 1 auto; }
 
             .quick-grid,
             .hero-mini-stats,
             .details-grid,
-            .alert-grid {
+            .alert-grid,
+            .top-attacker-grid,
+            .decision-hero-grid,
+            .score-strip {
                 grid-template-columns: 1fr;
             }
 
@@ -986,9 +1087,7 @@
         }
 
         @media (max-width: 520px) {
-            .kpi-grid {
-                grid-template-columns: 1fr;
-            }
+            .kpi-grid { grid-template-columns: 1fr; }
 
             .status-value,
             .kpi-value,
@@ -997,9 +1096,7 @@
                 font-size: 20px;
             }
 
-            .eyebrow {
-                font-size: 9px;
-            }
+            .eyebrow { font-size: 9px; }
         }
     </style>
 </head>
@@ -1031,7 +1128,7 @@
                     <div>
                         <h1>Honeypot Dashboard</h1>
                         <div class="hero-sub">
-                            Real-time SSH and web telemetry, hybrid threat scoring, live alerts, actor watchlisting, and model-backed security intelligence.
+                            Real-time SSH and web telemetry, hybrid threat scoring, explainable alerts, actor watchlisting, and model-backed security intelligence.
                         </div>
                     </div>
 
@@ -1040,7 +1137,7 @@
                             <i class="fas fa-table-list"></i> Event Stream
                         </button>
                         <button class="btn" id="scroll-actors-btn" type="button">
-                            <i class="fas fa-user-secret"></i> Bad Actors
+                            <i class="fas fa-user-secret"></i> Top Attackers
                         </button>
                     </div>
                 </div>
@@ -1149,7 +1246,7 @@
             <div class="section-head">
                 <div>
                     <div class="section-title">Live Event Stream</div>
-                    <div class="section-sub">Incoming sessions, hybrid decisions, severity output, and expandable forensic details.</div>
+                    <div class="section-sub">Incoming sessions, hybrid decisions, severity output, and expandable explainable details.</div>
                 </div>
                 <div class="section-actions">
                     <button class="btn" id="refresh-stats-btn" type="button"><i class="fas fa-rotate-right"></i> Refresh</button>
@@ -1180,11 +1277,15 @@
                             data-threat-score="{{ event.threat_score or 0 }}"
                             data-lstm-score="{{ event.lstm_score or 0 }}"
                             data-command-score="{{ event.command_score or 0 }}"
+                            data-ciciot-score="{{ event.ciciot_score or 0 }}"
+                            data-ciciot-confidence="{{ event.ciciot_confidence or 0 }}"
+                            data-ciciot-attack="{{ event.ciciot_attack or '' }}"
                             data-source="{{ event.decision_source or 'rules' }}"
                             data-policy-escalated="{{ 'true' if event.policy_escalated else 'false' }}"
                             data-source-ip="{{ event.source_ip or '-' }}"
                             data-command="{{ event.command or '-' }}"
                             data-attack-class="{{ event.attack_class or 'normal' }}"
+                            data-reason="{{ event.reason or 'benign_activity' }}"
                             data-action-taken="{{ event.action_taken or 'logged' }}"
                             data-lstm-session="{{ event.lstm_session or 'Unknown' }}"
                             data-base-severity="{{ event.base_severity or 'LOW' }}"
@@ -1277,12 +1378,29 @@
             <div class="panel" id="bad-actors-panel">
                 <div class="section-head">
                     <div>
-                        <div class="section-title">Bad Actor Tracking</div>
-                        <div class="section-sub">Watchlisted or escalated sources reconstructed from persistent backend state.</div>
+                        <div class="section-title">Top Attackers</div>
+                        <div class="section-sub">Highest-risk sources ranked by maximum threat score and enforcement state.</div>
                     </div>
                     <div class="badge badge-high">
                         <i class="fas fa-user-secret"></i>
                         <span id="bad-actors-badge-count">{{ bad_actors_count or 0 }}</span>
+                    </div>
+                </div>
+
+                <div class="top-attacker-hero">
+                    <div class="top-attacker-grid">
+                        <div class="top-attacker-stat">
+                            <div class="top-attacker-label">Most Dangerous IP</div>
+                            <div class="top-attacker-value mono" id="top-attacker-ip">-</div>
+                        </div>
+                        <div class="top-attacker-stat">
+                            <div class="top-attacker-label">Peak Threat</div>
+                            <div class="top-attacker-value" id="top-attacker-score">0.000</div>
+                        </div>
+                        <div class="top-attacker-stat">
+                            <div class="top-attacker-label">Enforcement</div>
+                            <div class="top-attacker-value" id="top-attacker-enforcement">-</div>
+                        </div>
                     </div>
                 </div>
 
@@ -1300,7 +1418,7 @@
                         </thead>
                         <tbody id="bad-actors-tbody">
                             <tr>
-                                <td colspan="6" class="empty-cell">Loading tracked actors...</td>
+                                <td colspan="6" class="empty-cell">Loading top attackers...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -1314,7 +1432,7 @@
             <div class="alert-head">
                 <div>
                     <div class="alert-title">High Severity Alert</div>
-                    <div class="alert-sub">Real-time escalation triggered by hybrid scoring or policy floor enforcement.</div>
+                    <div class="alert-sub">Real-time escalation triggered by hybrid scoring or severity floor enforcement.</div>
                 </div>
                 <button class="close-btn" id="close-alert-btn" type="button"><i class="fas fa-xmark"></i></button>
             </div>
@@ -1342,8 +1460,16 @@
                         <div class="alert-v" id="alert-attack-class">-</div>
                     </div>
                     <div class="alert-kv">
+                        <div class="alert-k">Reason</div>
+                        <div class="alert-v" id="alert-reason">-</div>
+                    </div>
+                    <div class="alert-kv">
                         <div class="alert-k">Action Taken</div>
                         <div class="alert-v" id="alert-action">-</div>
+                    </div>
+                    <div class="alert-kv">
+                        <div class="alert-k">Policy Escalated</div>
+                        <div class="alert-v" id="alert-policy-escalated">-</div>
                     </div>
                 </div>
 
@@ -1355,6 +1481,14 @@
                     <div class="alert-kv">
                         <div class="alert-k">Command Score</div>
                         <div class="alert-v" id="alert-command-score">0.000</div>
+                    </div>
+                    <div class="alert-kv">
+                        <div class="alert-k">CICIoT</div>
+                        <div class="alert-v" id="alert-ciciot-summary">Not available</div>
+                    </div>
+                    <div class="alert-kv">
+                        <div class="alert-k">Base / Floor Severity</div>
+                        <div class="alert-v" id="alert-severity-breakdown">-</div>
                     </div>
                 </div>
 
@@ -1407,11 +1541,13 @@
                 });
 
                 document.getElementById('theme-toggle-btn')?.addEventListener('click', () => {
-                    document.body.classList.toggle('theme-light');
-                    localStorage.setItem(this.themeKey, document.body.classList.contains('theme-light') ? 'light' : 'dark');
-                    this.updateThemeButtonLabel();
-                });
-
+    document.body.classList.toggle('theme-light');
+    localStorage.setItem(
+        this.themeKey,
+        document.body.classList.contains('theme-light') ? 'light' : 'dark'
+    );
+    this.updateThemeButtonLabel();
+});
                 document.getElementById('density-toggle-btn')?.addEventListener('click', () => {
                     document.body.classList.toggle('compact');
                     localStorage.setItem(this.compactKey, document.body.classList.contains('compact') ? 'compact' : 'comfortable');
@@ -1564,6 +1700,12 @@
                 return this.num(value, 0).toFixed(3);
             }
 
+            prettifyToken(value) {
+                return String(value || '-')
+                    .replace(/_/g, ' ')
+                    .replace(/\b\w/g, (m) => m.toUpperCase());
+            }
+
             getScoreClass(value) {
                 const v = this.num(value, 0);
                 if (v >= 0.75) return 'score-high';
@@ -1609,6 +1751,33 @@
                 return now.toLocaleTimeString([], { hour12: false });
             }
 
+            hasCiciotData(row) {
+                const score = this.num(row.dataset.ciciotScore, 0);
+                const conf = this.num(row.dataset.ciciotConfidence, 0);
+                const attack = String(row.dataset.ciciotAttack || '').trim();
+                return score > 0 || conf > 0 || attack.length > 0;
+            }
+
+            buildCiciotSummary(row) {
+                if (!this.hasCiciotData(row)) {
+                    return {
+                        scoreHtml: '<span class="detail-muted">Not available for this event</span>',
+                        confidenceHtml: '<span class="detail-muted">Not available for this event</span>',
+                        attackHtml: '<span class="detail-muted">No CICIoT features provided</span>'
+                    };
+                }
+
+                const attack = row.dataset.ciciotAttack || '-';
+                const score = this.formatScore(row.dataset.ciciotScore);
+                const confidence = this.formatScore(row.dataset.ciciotConfidence);
+
+                return {
+                    scoreHtml: `<span class="${this.getScoreClass(row.dataset.ciciotScore)}">${score}</span>`,
+                    confidenceHtml: confidence,
+                    attackHtml: this.escapeHtml(attack)
+                };
+            }
+
             buildDetailsHtml(row) {
                 const severity = String(row.dataset.severity || 'LOW').toUpperCase();
                 const attackClass = row.dataset.attackClass || 'normal';
@@ -1619,48 +1788,94 @@
                 const actionTaken = row.dataset.actionTaken || 'logged';
                 const lstmSession = row.dataset.lstmSession || 'Unknown';
                 const policyEscalated = row.dataset.policyEscalated === 'true' ? 'Yes' : 'No';
+                const reason = row.dataset.reason || 'benign_activity';
+                const ciciot = this.buildCiciotSummary(row);
+
+                const decisionLabel = source === 'COMMAND'
+                    ? 'Command Rules'
+                    : source === 'LSTM'
+                    ? 'LSTM Model'
+                    : source === 'HYBRID'
+                    ? 'Hybrid Fusion'
+                    : source === 'CICIOT'
+                    ? 'CICIoT Model'
+                    : source === 'POLICY'
+                    ? 'Policy Override'
+                    : source;
 
                 return `
                     <div class="details-panel">
+                        <div class="details-topline">
+                            <span class="badge badge-reason">${this.escapeHtml(this.prettifyToken(reason))}</span>
+                            <span class="${this.sourceClass(source)}">${this.escapeHtml(decisionLabel)}</span>
+                            <span class="${this.attackClass(attackClass)}">${this.escapeHtml(attackClass)}</span>
+                            <span class="badge ${this.sevClass(severity)}">${this.escapeHtml(severity)}</span>
+                        </div>
+
+                        <div class="details-section-title">Why This Decision</div>
+                        <div class="decision-hero">
+                            <div class="decision-hero-grid">
+                                <div class="decision-hero-box">
+                                    <div class="decision-hero-label">Primary Reason</div>
+                                    <div class="decision-hero-value">${this.escapeHtml(this.prettifyToken(reason))}</div>
+                                </div>
+                                <div class="decision-hero-box">
+                                    <div class="decision-hero-label">Decision Source</div>
+                                    <div class="decision-hero-value">${this.escapeHtml(decisionLabel)}</div>
+                                </div>
+                                <div class="decision-hero-box">
+                                    <div class="decision-hero-label">Attack Class</div>
+                                    <div class="decision-hero-value">${this.escapeHtml(attackClass)}</div>
+                                </div>
+                                <div class="decision-hero-box">
+                                    <div class="decision-hero-label">Action Taken</div>
+                                    <div class="decision-hero-value">${this.escapeHtml(actionTaken)}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="details-section-title">Score Breakdown</div>
+                        <div class="score-strip">
+                            <div class="score-strip-box">
+                                <div class="score-strip-label">Threat Score</div>
+                                <div class="score-strip-value ${this.getScoreClass(row.dataset.threatScore)}">${this.formatScore(row.dataset.threatScore)}</div>
+                            </div>
+                            <div class="score-strip-box">
+                                <div class="score-strip-label">LSTM Score</div>
+                                <div class="score-strip-value ${this.getScoreClass(row.dataset.lstmScore)}">${this.formatScore(row.dataset.lstmScore)}</div>
+                            </div>
+                            <div class="score-strip-box">
+                                <div class="score-strip-label">Command Score</div>
+                                <div class="score-strip-value ${this.getScoreClass(row.dataset.commandScore)}">${this.formatScore(row.dataset.commandScore)}</div>
+                            </div>
+                            <div class="score-strip-box">
+                                <div class="score-strip-label">LSTM Session</div>
+                                <div class="score-strip-value">${this.escapeHtml(lstmSession)}</div>
+                            </div>
+                        </div>
+
+                        <div class="details-section-title">CICIoT Context</div>
                         <div class="details-grid">
                             <div class="detail-box">
-                                <div class="detail-k">Threat Score</div>
-                                <div class="detail-v ${this.getScoreClass(row.dataset.threatScore)}">${this.formatScore(row.dataset.threatScore)}</div>
+                                <div class="detail-k">CICIoT Score</div>
+                                <div class="detail-v">${ciciot.scoreHtml}</div>
                             </div>
                             <div class="detail-box">
-                                <div class="detail-k">LSTM Score</div>
-                                <div class="detail-v ${this.getScoreClass(row.dataset.lstmScore)}">${this.formatScore(row.dataset.lstmScore)}</div>
+                                <div class="detail-k">CICIoT Confidence</div>
+                                <div class="detail-v">${ciciot.confidenceHtml}</div>
                             </div>
                             <div class="detail-box">
-                                <div class="detail-k">Command Score</div>
-                                <div class="detail-v ${this.getScoreClass(row.dataset.commandScore)}">${this.formatScore(row.dataset.commandScore)}</div>
+                                <div class="detail-k">CICIoT Attack</div>
+                                <div class="detail-v">${ciciot.attackHtml}</div>
                             </div>
-
                             <div class="detail-box">
                                 <div class="detail-k">Event Type</div>
                                 <div class="detail-v">${this.escapeHtml(eventType)}</div>
                             </div>
-                            <div class="detail-box">
-                                <div class="detail-k">Source IP</div>
-                                <div class="detail-v mono">${this.escapeHtml(sourceIp)}</div>
-                            </div>
-                            <div class="detail-box">
-                                <div class="detail-k">Severity</div>
-                                <div class="detail-v">${this.escapeHtml(severity)}</div>
-                            </div>
-                            <div class="detail-box">
-                                <div class="detail-k">Decision Source</div>
-                                <div class="detail-v">${this.escapeHtml(source)}</div>
-                            </div>
+                        </div>
 
-                            <div class="detail-box">
-                                <div class="detail-k">Attack Class</div>
-                                <div class="detail-v">${this.escapeHtml(attackClass)}</div>
-                            </div>
-                            <div class="detail-box">
-                                <div class="detail-k">LSTM Session</div>
-                                <div class="detail-v">${this.escapeHtml(lstmSession)}</div>
-                            </div>
+                        <div class="details-section-title">Severity Logic</div>
+                        <div class="details-grid">
                             <div class="detail-box">
                                 <div class="detail-k">Base Severity</div>
                                 <div class="detail-v">${this.escapeHtml(String(row.dataset.baseSeverity || 'LOW').toUpperCase())}</div>
@@ -1674,8 +1889,28 @@
                                 <div class="detail-v">${this.escapeHtml(policyEscalated)}</div>
                             </div>
                             <div class="detail-box">
-                                <div class="detail-k">Action Taken</div>
-                                <div class="detail-v">${this.escapeHtml(actionTaken)}</div>
+                                <div class="detail-k">Timestamp</div>
+                                <div class="detail-v mono">${this.escapeHtml(row.dataset.timestamp || '-')}</div>
+                            </div>
+                        </div>
+
+                        <div class="details-section-title">Event Context</div>
+                        <div class="details-grid">
+                            <div class="detail-box">
+                                <div class="detail-k">Source IP</div>
+                                <div class="detail-v mono">${this.escapeHtml(sourceIp)}</div>
+                            </div>
+                            <div class="detail-box">
+                                <div class="detail-k">Severity</div>
+                                <div class="detail-v">${this.escapeHtml(severity)}</div>
+                            </div>
+                            <div class="detail-box">
+                                <div class="detail-k">Telemetry Type</div>
+                                <div class="detail-v">${this.escapeHtml(eventType)}</div>
+                            </div>
+                            <div class="detail-box">
+                                <div class="detail-k">Pipeline Mode</div>
+                                <div class="detail-v">Command + LSTM + CICIoT</div>
                             </div>
                         </div>
 
@@ -1736,18 +1971,25 @@
                 const threatScore = this.num(event.threat_score, 0);
                 const lstmScore = this.num(event.lstm_score, 0);
                 const commandScore = this.num(event.command_score, 0);
+                const ciciotScore = this.num(event.ciciot_score, 0);
+                const ciciotConfidence = this.num(event.ciciot_confidence, 0);
                 const policyEscalated = Boolean(event.policy_escalated);
+                const reason = event.reason || 'benign_activity';
 
                 row.dataset.eventType = eventType;
                 row.dataset.severity = severity;
                 row.dataset.threatScore = threatScore;
                 row.dataset.lstmScore = lstmScore;
                 row.dataset.commandScore = commandScore;
+                row.dataset.ciciotScore = ciciotScore;
+                row.dataset.ciciotConfidence = ciciotConfidence;
+                row.dataset.ciciotAttack = event.ciciot_attack || '';
                 row.dataset.source = source;
                 row.dataset.policyEscalated = policyEscalated ? 'true' : 'false';
                 row.dataset.sourceIp = ip;
                 row.dataset.command = command;
                 row.dataset.attackClass = attackClass;
+                row.dataset.reason = reason;
                 row.dataset.actionTaken = event.action_taken || 'logged';
                 row.dataset.lstmSession = event.lstm_session || 'Unknown';
                 row.dataset.baseSeverity = event.base_severity || 'LOW';
@@ -1802,20 +2044,33 @@
                     .sort((a, b) => this.num(b.maxThreat) - this.num(a.maxThreat));
 
                 const actorCount = actors.length;
+                const topActors = actors.slice(0, 5);
+                const topActor = topActors.length > 0 ? topActors[0] : null;
+
                 this.setText('summary-tracked-actors', actorCount);
                 this.setText('bad-actors-badge-count', actorCount);
                 this.setText('kpi-tracked-actors', actorCount);
 
-                if (actors.length === 0) {
+                if (topActor) {
+                    this.setText('top-attacker-ip', topActor.ip || '-');
+                    this.setFormattedThreat('top-attacker-score', topActor.maxThreat || 0);
+                    this.setText('top-attacker-enforcement', topActor.enforcement || 'monitor');
+                } else {
+                    this.setText('top-attacker-ip', '-');
+                    this.setFormattedThreat('top-attacker-score', 0);
+                    this.setText('top-attacker-enforcement', '-');
+                }
+
+                if (topActors.length === 0) {
                     tbody.innerHTML = `
                         <tr>
-                            <td colspan="6" class="empty-cell">No tracked actors yet</td>
+                            <td colspan="6" class="empty-cell">No tracked attackers yet</td>
                         </tr>
                     `;
                     return;
                 }
 
-                tbody.innerHTML = actors.map(actor => `
+                tbody.innerHTML = topActors.map(actor => `
                     <tr>
                         <td><span class="mono">${this.escapeHtml(actor.ip)}</span></td>
                         <td class="score ${this.getScoreClass(actor.maxThreat)}">${this.formatScore(actor.maxThreat)}</td>
@@ -1838,51 +2093,56 @@
             }
 
             refreshVisibleStats() {
-                const rows = Array.from(document.querySelectorAll('#events-tbody > tr:not(.details-row)'));
+    const rows = Array.from(document.querySelectorAll('#events-tbody > tr:not(.details-row)'));
 
-                let visibleTotal = rows.length;
-                let visibleHigh = 0;
-                let avgThreatSum = 0;
+    let visibleTotal = rows.length;
+    let visibleHigh = 0;
+    let visibleSsh = 0;
+    let visibleWeb = 0;
+    let avgThreatSum = 0;
 
-                rows.forEach((row) => {
-                    const severity = String(row.dataset.severity || 'LOW').toUpperCase();
-                    const threat = this.num(row.dataset.threatScore, 0);
+    rows.forEach((row) => {
+        const severity = String(row.dataset.severity || 'LOW').toUpperCase();
+        const threat = this.num(row.dataset.threatScore, 0);
+        const eventType = String(row.dataset.eventType || 'ssh').toLowerCase();
 
-                    if (severity === 'HIGH') {
-                        visibleHigh += 1;
-                    }
+        if (severity === 'HIGH') {
+            visibleHigh += 1;
+        }
 
-                    avgThreatSum += threat;
-                    this.applyScoreClassToRow(row);
-                });
+        if (eventType === 'ssh') {
+            visibleSsh += 1;
+        } else if (eventType === 'web') {
+            visibleWeb += 1;
+        }
 
-                const avgThreat = visibleTotal > 0 ? (avgThreatSum / visibleTotal) : 0;
+        avgThreatSum += threat;
+        this.applyScoreClassToRow(row);
+    });
 
-                this.setText('summary-visible-rows', visibleTotal);
-                this.setText('summary-visible-high', visibleHigh);
-                this.setText('live-count', visibleTotal);
-                this.setFormattedThreat('summary-visible-avg-threat', avgThreat);
-                this.setFormattedThreat('kpi-average-threat', avgThreat);
-            }
+    const avgThreat = visibleTotal > 0 ? (avgThreatSum / visibleTotal) : 0;
 
+    this.setText('summary-visible-rows', visibleTotal);
+    this.setText('summary-visible-high', visibleHigh);
+    this.setText('live-count', visibleTotal);
+    this.setFormattedThreat('summary-visible-avg-threat', avgThreat);
+    this.setFormattedThreat('kpi-average-threat', avgThreat);
+
+    this.setText('kpi-total-events', visibleTotal);
+    this.setText('kpi-ssh-events', visibleSsh);
+    this.setText('kpi-web-events', visibleWeb);
+    this.setText('kpi-high-severity', visibleHigh);
+}
             updateGlobalKpisFromStats(data) {
-                const totalEvents = this.getFirstNumber(data, ['total_events']);
-                const sshCount = this.getFirstNumber(data, ['ssh_count']);
-                const webCount = this.getFirstNumber(data, ['web_count']);
-                const highCount = this.getFirstNumber(data, ['high_count']);
-                const badActorsCount = this.getFirstNumber(data, ['bad_actors_count', 'tracked_actors', 'actors_count']);
-                const policyEscalations = this.getFirstNumber(data, ['policy_escalations']);
+    const badActorsCount = this.getFirstNumber(data, ['bad_actors_count', 'tracked_actors', 'actors_count']);
+    const policyEscalations = this.getFirstNumber(data, ['policy_escalations']);
 
-                this.setText('kpi-total-events', totalEvents);
-                this.setText('kpi-ssh-events', sshCount);
-                this.setText('kpi-web-events', webCount);
-                this.setText('kpi-high-severity', highCount);
-                this.setText('kpi-tracked-actors', badActorsCount);
+    this.setText('kpi-tracked-actors', badActorsCount);
 
-                this.setText('summary-global-policy-escalations', policyEscalations);
-                this.setText('summary-tracked-actors', badActorsCount);
-                this.setText('bad-actors-badge-count', badActorsCount);
-            }
+    this.setText('summary-global-policy-escalations', policyEscalations);
+    this.setText('summary-tracked-actors', badActorsCount);
+    this.setText('bad-actors-badge-count', badActorsCount);
+}
 
             async fetchGlobalStats() {
                 try {
@@ -1915,14 +2175,26 @@
                 const overlay = document.getElementById('alert-overlay');
                 if (!overlay) return;
 
+                const ciciotScore = this.num(event.ciciot_score, 0);
+                const ciciotConfidence = this.num(event.ciciot_confidence, 0);
+                const ciciotAttack = String(event.ciciot_attack || '').trim();
+                const hasCiciot = ciciotScore > 0 || ciciotConfidence > 0 || ciciotAttack.length > 0;
+
                 document.getElementById('alert-ip').textContent = event.source_ip || event.ip || '-';
                 document.getElementById('alert-severity').textContent = String(event.severity || 'HIGH').toUpperCase();
                 document.getElementById('alert-score').textContent = this.formatScore(event.threat_score);
                 document.getElementById('alert-source').textContent = String(event.decision_source || 'rules').toUpperCase();
                 document.getElementById('alert-attack-class').textContent = event.attack_class || 'normal';
+                document.getElementById('alert-reason').textContent = this.prettifyToken(event.reason || 'benign_activity');
                 document.getElementById('alert-action').textContent = event.action_taken || 'alerted';
+                document.getElementById('alert-policy-escalated').textContent = event.policy_escalated ? 'Yes' : 'No';
                 document.getElementById('alert-lstm-score').textContent = this.formatScore(event.lstm_score);
                 document.getElementById('alert-command-score').textContent = this.formatScore(event.command_score);
+                document.getElementById('alert-ciciot-summary').textContent = hasCiciot
+                    ? `${this.formatScore(event.ciciot_score)} / ${this.formatScore(event.ciciot_confidence)} / ${event.ciciot_attack || '-'}`
+                    : 'Not available for this event';
+                document.getElementById('alert-severity-breakdown').textContent =
+                    `${String(event.base_severity || 'LOW').toUpperCase()} / ${String(event.floor_severity || 'LOW').toUpperCase()}`;
                 document.getElementById('alert-command').textContent = event.command || '-';
 
                 overlay.style.display = 'flex';
@@ -1940,3 +2212,4 @@
     </script>
 </body>
 </html>
+  

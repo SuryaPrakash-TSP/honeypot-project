@@ -1,0 +1,54 @@
+Loaded feature count: 46
+Original shape: (50000, 47)
+Using label column: label
+Filtered shape: (50000, 47)
+
+=== MAPPED TRUE LABEL COUNTS ===
+label
+DDoS      36470
+DoS        8644
+Mirai      2814
+Benign     1093
+Other       588
+Recon       391
+Name: count, dtype: int64
+
+=== MAPPED PREDICTED LABEL COUNTS ===
+DDoS      36511
+DoS        8642
+Mirai      2814
+Benign     1265
+Other       503
+Recon       265
+Name: count, dtype: int64
+
+=== RF METRICS ===
+Accuracy : 0.9933
+Precision: 0.9933
+Recall   : 0.9933
+F1-score : 0.9930
+
+=== CLASSIFICATION REPORT ===
+              precision    recall  f1-score   support
+
+      Benign     0.8427    0.9753    0.9042      1093
+        DDoS     0.9988    0.9999    0.9993     36470
+         DoS     0.9998    0.9995    0.9997      8644
+       Mirai     0.9996    0.9996    0.9996      2814
+       Recon     0.8642    0.5857    0.6982       391
+       Other     0.8986    0.7687    0.8286       588
+
+    accuracy                         0.9933     50000
+   macro avg     0.9339    0.8881    0.9049     50000
+weighted avg     0.9933    0.9933    0.9930     50000
+
+
+=== CONFUSION MATRIX ===
+[[ 1066     0     0     0     9    18]
+ [    0 36466     2     1     0     1]
+ [    0     4  8640     0     0     0]
+ [    0     1     0  2813     0     0]
+ [   90    40     0     0   229    32]
+ [  109     0     0     0    27   452]]
+
+Saved image: rf_confusion_matrix.png

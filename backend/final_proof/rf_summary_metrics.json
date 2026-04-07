@@ -1,0 +1,72 @@
+{
+  "dataset_rows_used": 274238,
+  "train_rows": 219390,
+  "test_rows": 54848,
+  "feature_count": 46,
+  "classes": [
+    "Benign",
+    "BruteForce",
+    "DDoS",
+    "DoS",
+    "Mirai",
+    "Recon",
+    "Spoofing"
+  ],
+  "top_10_features": [
+    {
+      "feature": "IAT",
+      "importance": 0.1940618645020145
+    },
+    {
+      "feature": "Header_Length",
+      "importance": 0.06482823900083369
+    },
+    {
+      "feature": "Max",
+      "importance": 0.059893967792686596
+    },
+    {
+      "feature": "Magnitue",
+      "importance": 0.05966901549824069
+    },
+    {
+      "feature": "rst_count",
+      "importance": 0.05855329692542646
+    },
+    {
+      "feature": "AVG",
+      "importance": 0.046698270362330443
+    },
+    {
+      "feature": "Min",
+      "importance": 0.04506748460839447
+    },
+    {
+      "feature": "Tot size",
+      "importance": 0.04382888668838761
+    },
+    {
+      "feature": "urg_count",
+      "importance": 0.04077521066168924
+    },
+    {
+      "feature": "Variance",
+      "importance": 0.03985926804324739
+    }
+  ],
+  "accuracy": 0.9927071178529755,
+  "macro_avg_precision": 0.8700093544430542,
+  "macro_avg_recall": 0.8677750286144136,
+  "macro_avg_f1": 0.8679577325677057,
+  "weighted_avg_precision": 0.9929822022624266,
+  "weighted_avg_recall": 0.9927071178529755,
+  "weighted_avg_f1": 0.9927364797945886,
+  "random_state": 42,
+  "chunk_size": 100000,
+  "target_rows": 300000,
+  "sample_frac": 0.05,
+  "class_weight": "balanced",
+  "model_type": "RandomForestClassifier",
+  "n_estimators": 50,
+  "max_depth": 15
+}
