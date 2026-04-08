@@ -1,0 +1,33 @@
+{
+  "version": "LSTM v10",
+  "accuracy": 0.9874911308288574,
+  "classes": 5,
+  "class_names": [
+    "exploitation",
+    "normal",
+    "other",
+    "privilege_abuse",
+    "reconnaissance"
+  ],
+  "sessions": 233035,
+  "train_size": 186428,
+  "test_size": 46607,
+  "max_words": 5000,
+  "max_len": 50,
+  "epochs_requested": 8,
+  "batch_size": 256,
+  "class_weights": {
+    "exploitation": 0.501541524306583,
+    "normal": 204.86593406593406,
+    "other": 9321.4,
+    "privilege_abuse": 0.389304098146698,
+    "reconnaissance": 2.3122852713178292
+  },
+  "label_mapping": {
+    "Execution": "exploitation",
+    "Persistence": "privilege_abuse",
+    "Discovery": "reconnaissance",
+    "Harmless": "normal",
+    "fallback": "other"
+  }
+}
