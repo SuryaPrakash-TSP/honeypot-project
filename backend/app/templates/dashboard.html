@@ -7,57 +7,57 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <style>
         :root {
-            --bg: #071019;
-            --bg-2: #0b1623;
-            --bg-3: #0f1d2d;
-            --panel: rgba(10, 18, 29, 0.96);
-            --panel-2: rgba(15, 27, 42, 0.98);
-            --panel-soft: rgba(255, 255, 255, 0.03);
-            --panel-soft-2: rgba(255, 255, 255, 0.05);
-            --border: rgba(83, 118, 153, 0.24);
-            --border-strong: rgba(110, 146, 184, 0.38);
-            --text: #e8f1fb;
-            --muted: #8ea3bb;
-            --muted-2: #c6d3e1;
-            --accent: #24c4ff;
-            --accent-2: #7c5cff;
-            --accent-soft: rgba(36, 196, 255, 0.12);
-            --success-soft: rgba(34, 197, 94, 0.14);
-            --warning-soft: rgba(245, 158, 11, 0.14);
-            --danger-soft: rgba(239, 68, 68, 0.14);
-            --purple-soft: rgba(124, 92, 255, 0.14);
-            --info-soft: rgba(56, 189, 248, 0.14);
-            --shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
-            --radius: 16px;
-            --radius-sm: 12px;
-            --shell-max: 1580px;
-            --shell-pad: 10px;
-            --table-max-h: 58vh;
-        }
+    --bg: #060b14;
+    --bg-2: #0a1322;
+    --bg-3: #0f1a2e;
+    --panel: rgba(12, 20, 34, 0.96);
+    --panel-2: rgba(16, 28, 46, 0.98);
+    --panel-soft: rgba(255, 255, 255, 0.03);
+    --panel-soft-2: rgba(255, 255, 255, 0.05);
+    --border: rgba(96, 128, 166, 0.22);
+    --border-strong: rgba(122, 156, 196, 0.34);
+    --text: #eaf2ff;
+    --muted: #8ea4c0;
+    --muted-2: #c8d6e8;
+    --accent: #3b82f6;
+    --accent-2: #1d4ed8;
+    --accent-soft: rgba(59, 130, 246, 0.14);
+    --success-soft: rgba(34, 197, 94, 0.14);
+    --warning-soft: rgba(245, 158, 11, 0.14);
+    --danger-soft: rgba(239, 68, 68, 0.14);
+    --purple-soft: rgba(59, 130, 246, 0.12);
+    --info-soft: rgba(59, 130, 246, 0.12);
+    --shadow: 0 16px 36px rgba(0, 0, 0, 0.30);
+    --radius: 16px;
+    --radius-sm: 12px;
+    --shell-max: 1580px;
+    --shell-pad: 10px;
+    --table-max-h: 58vh;
+}
 
         body.theme-light {
-            --bg: #edf4fb;
-            --bg-2: #e5eef8;
-            --bg-3: #dbe8f5;
-            --panel: rgba(255, 255, 255, 0.97);
-            --panel-2: rgba(248, 251, 255, 0.98);
-            --panel-soft: rgba(15, 23, 42, 0.03);
-            --panel-soft-2: rgba(15, 23, 42, 0.05);
-            --border: rgba(15, 23, 42, 0.10);
-            --border-strong: rgba(15, 23, 42, 0.18);
-            --text: #0f172a;
-            --muted: #64748b;
-            --muted-2: #334155;
-            --accent: #0284c7;
-            --accent-2: #7c3aed;
-            --accent-soft: rgba(2, 132, 199, 0.10);
-            --success-soft: rgba(34, 197, 94, 0.10);
-            --warning-soft: rgba(245, 158, 11, 0.12);
-            --danger-soft: rgba(239, 68, 68, 0.10);
-            --purple-soft: rgba(124, 58, 237, 0.10);
-            --info-soft: rgba(56, 189, 248, 0.10);
-            --shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
-        }
+    --bg: #eef4fb;
+    --bg-2: #e6eef8;
+    --bg-3: #dce7f5;
+    --panel: rgba(255, 255, 255, 0.97);
+    --panel-2: rgba(248, 251, 255, 0.98);
+    --panel-soft: rgba(15, 23, 42, 0.03);
+    --panel-soft-2: rgba(15, 23, 42, 0.05);
+    --border: rgba(15, 23, 42, 0.10);
+    --border-strong: rgba(15, 23, 42, 0.18);
+    --text: #0f172a;
+    --muted: #64748b;
+    --muted-2: #334155;
+    --accent: #2563eb;
+    --accent-2: #1d4ed8;
+    --accent-soft: rgba(37, 99, 235, 0.10);
+    --success-soft: rgba(34, 197, 94, 0.10);
+    --warning-soft: rgba(245, 158, 11, 0.12);
+    --danger-soft: rgba(239, 68, 68, 0.10);
+    --purple-soft: rgba(37, 99, 235, 0.10);
+    --info-soft: rgba(37, 99, 235, 0.10);
+    --shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
 
         body.compact {
             --shell-pad: 8px;
@@ -70,28 +70,29 @@
         html { scroll-behavior: smooth; }
 
         body {
-            margin: 0;
-            min-height: 100vh;
-            color: var(--text);
-            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background:
-                radial-gradient(circle at top left, rgba(36, 196, 255, 0.08), transparent 22%),
-                radial-gradient(circle at top right, rgba(124, 92, 255, 0.08), transparent 20%),
-                linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 48%, var(--bg-3) 100%);
-        }
+    margin: 0;
+    min-height: 100vh;
+    color: var(--text);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    letter-spacing: 0.2px;
+    background:
+        radial-gradient(circle at top left, rgba(59, 130, 246, 0.08), transparent 24%),
+        radial-gradient(circle at top right, rgba(29, 78, 216, 0.07), transparent 22%),
+        linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 48%, var(--bg-3) 100%);
+}
 
         body.theme-light {
-            background:
-                radial-gradient(circle at top left, rgba(2, 132, 199, 0.08), transparent 24%),
-                radial-gradient(circle at top right, rgba(124, 58, 237, 0.08), transparent 24%),
-                linear-gradient(180deg, #f7fbff 0%, #edf4fb 50%, #e3edf7 100%);
-        }
+    background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 24%),
+        radial-gradient(circle at top right, rgba(29, 78, 216, 0.06), transparent 24%),
+        linear-gradient(180deg, #f7fbff 0%, #eef4fb 50%, #e3edf7 100%);
+}
 
         .shell {
-            max-width: var(--shell-max);
-            margin: 0 auto;
-            padding: var(--shell-pad);
-        }
+    max-width: var(--shell-max);
+    margin: 0 auto;
+    padding: 14px;
+}
 
         .toolbar {
             display: flex;
@@ -136,9 +137,9 @@
         }
 
         .btn-accent {
-            background: linear-gradient(180deg, rgba(36, 196, 255, 0.18), rgba(36, 196, 255, 0.08));
-            border-color: rgba(36, 196, 255, 0.24);
-        }
+    background: linear-gradient(180deg, rgba(59, 130, 246, 0.18), rgba(59, 130, 246, 0.08));
+    border-color: rgba(59, 130, 246, 0.24);
+}
 
         .panel {
             background: linear-gradient(180deg, var(--panel), rgba(255,255,255,0.01));
@@ -159,18 +160,18 @@
         }
 
         .hero-panel {
-            padding: 14px 16px;
-            position: relative;
-        }
+    padding: 18px 20px;
+    position: relative;
+}
 
         .hero-panel::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-            background:
-                linear-gradient(120deg, rgba(36, 196, 255, 0.05), transparent 42%, rgba(124, 92, 255, 0.05));
-        }
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        linear-gradient(120deg, rgba(59, 130, 246, 0.03), transparent 42%, rgba(29, 78, 216, 0.03));
+}
 
         .eyebrow {
             display: inline-flex;
@@ -256,11 +257,11 @@
         }
 
         .status-panel {
-            padding: 12px;
-            display: grid;
-            gap: 10px;
-            align-content: start;
-        }
+    padding: 14px;
+    display: grid;
+    gap: 12px;
+    align-content: start;
+}
 
         .status-card {
             border: 1px solid var(--border);
@@ -358,23 +359,23 @@
         }
 
         .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(6, minmax(0, 1fr));
-            gap: 10px;
-            margin-bottom: 10px;
-        }
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
+}
 
         .kpi {
-            border: 1px solid var(--border);
-            background: linear-gradient(180deg, var(--panel), rgba(255,255,255,0.01));
-            border-radius: 14px;
-            padding: 12px;
-            min-height: 92px;
-            min-width: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
+    border: 1px solid var(--border);
+    background: linear-gradient(180deg, var(--panel), rgba(255,255,255,0.01));
+    border-radius: 14px;
+    padding: 14px;
+    min-height: 102px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
 
         .kpi-top {
             display: flex;
@@ -394,14 +395,18 @@
             flex: 0 0 auto;
         }
 
-        .kpi-value {
-            margin-top: 8px;
-            font-size: clamp(20px, 2vw, 24px);
-            font-weight: 900;
-            line-height: 1;
-            word-break: break-word;
-            font-variant-numeric: tabular-nums;
-        }
+        ..kpi-value {
+    margin-top: 8px;
+    font-size: clamp(20px, 2vw, 24px);
+    font-weight: 900;
+    line-height: 1;
+    word-break: break-word;
+    font-variant-numeric: tabular-nums;
+    color: #ffffff;
+}
+    body.theme-light .kpi-value {
+    color: #0f172a;
+}
 
         .kpi-label {
             margin-top: 5px;
@@ -423,14 +428,14 @@
         }
 
         .section-head {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 10px;
-            padding: 12px 14px 10px;
-            border-bottom: 1px solid var(--border);
-            flex-wrap: wrap;
-        }
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+}
 
         .section-title {
             font-size: 14px;
@@ -473,19 +478,42 @@
         .events-table { min-width: 1180px; }
         .mini-table { min-width: 720px; }
 
-        th,
-        td {
-            text-align: left;
-            padding: 9px 8px;
-            border-bottom: 1px solid rgba(255,255,255,0.06);
-            vertical-align: top;
-            font-size: 11px;
-        }
+       th,
+       td {
+    text-align: left;
+    padding: 11px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    vertical-align: top;
+    font-size: 11px;
+}
 
         body.theme-light th,
         body.theme-light td {
             border-bottom: 1px solid rgba(15, 23, 42, 0.06);
         }
+        tr.severity-high td {
+    background: rgba(239, 68, 68, 0.08);
+}
+
+tr.severity-medium td {
+    background: rgba(245, 158, 11, 0.06);
+}
+
+tr.severity-low td {
+    background: rgba(34, 197, 94, 0.03);
+}
+
+body.theme-light tr.severity-high td {
+    background: rgba(239, 68, 68, 0.06);
+}
+
+body.theme-light tr.severity-medium td {
+    background: rgba(245, 158, 11, 0.05);
+}
+
+body.theme-light tr.severity-low td {
+    background: rgba(34, 197, 94, 0.03);
+}
 
         th {
             position: sticky;
@@ -529,7 +557,7 @@
 
         .score-low { color: #86efac; }
         .score-medium { color: #fcd34d; }
-        .score-high { color: #fca5a5; }
+        .score-high { color: #ef4444; }
 
         .badge {
             display: inline-flex;
@@ -1016,8 +1044,8 @@
         }
 
         @media (max-width: 1480px) {
-            .kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-        }
+    .kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
 
         @media (max-width: 1240px) {
             .hero-grid,
@@ -1216,6 +1244,14 @@
                 <div class="kpi-value" id="kpi-web-events">{{ web_count or 0 }}</div>
                 <div class="kpi-label">Web Events</div>
             </div>
+            
+            <div class="kpi">
+    <div class="kpi-top">
+        <div class="kpi-icon" style="color: #38bdf8;"><i class="fas fa-network-wired"></i></div>
+    </div>
+    <div class="kpi-value" id="kpi-network-events">{{ network_count or 0 }}</div>
+    <div class="kpi-label">Network Events</div>
+</div>
 
             <div class="kpi">
                 <div class="kpi-top">
@@ -1947,12 +1983,24 @@
             }
 
             applyScoreClassToRow(row) {
-                if (!row || row.classList.contains('details-row')) return;
-                const threatCell = row.cells[4];
-                if (threatCell) {
-                    threatCell.className = `score ${this.getScoreClass(row.dataset.threatScore)}`;
-                }
-            }
+    if (!row || row.classList.contains('details-row')) return;
+
+    const threatCell = row.cells[4];
+    if (threatCell) {
+        threatCell.className = `score ${this.getScoreClass(row.dataset.threatScore)}`;
+    }
+
+    row.classList.remove('severity-low', 'severity-medium', 'severity-high');
+    const sev = String(row.dataset.severity || 'LOW').toUpperCase();
+
+    if (sev === 'HIGH') {
+        row.classList.add('severity-high');
+    } else if (sev === 'MEDIUM') {
+        row.classList.add('severity-medium');
+    } else {
+        row.classList.add('severity-low');
+    }
+}
 
             addEventRow(event) {
                 const tbody = document.getElementById('events-tbody');
@@ -2099,6 +2147,7 @@
     let visibleHigh = 0;
     let visibleSsh = 0;
     let visibleWeb = 0;
+    let visibleNetwork = 0;
     let avgThreatSum = 0;
 
     rows.forEach((row) => {
@@ -2114,6 +2163,8 @@
             visibleSsh += 1;
         } else if (eventType === 'web') {
             visibleWeb += 1;
+        } else if (eventType === 'network') {
+            visibleNetwork += 1;
         }
 
         avgThreatSum += threat;
@@ -2131,6 +2182,7 @@
     this.setText('kpi-total-events', visibleTotal);
     this.setText('kpi-ssh-events', visibleSsh);
     this.setText('kpi-web-events', visibleWeb);
+    this.setText('kpi-network-events', visibleNetwork);
     this.setText('kpi-high-severity', visibleHigh);
 }
             updateGlobalKpisFromStats(data) {
