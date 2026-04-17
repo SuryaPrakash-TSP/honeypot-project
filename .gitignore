@@ -26,3 +26,6 @@ datasets/
 *.rf_backup
 *_backup.json
 *.pkl
+
+# Local archive datasets and legacy proofs
+backend/archive/

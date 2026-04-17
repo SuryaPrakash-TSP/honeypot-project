@@ -3,66 +3,55 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Honeypot Security Dashboard</title>
+    <title>Honeypot Detection and Adaptive Response Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <style>
         :root {
-    --bg: #060b14;
-    --bg-2: #0a1322;
-    --bg-3: #0f1a2e;
-    --panel: rgba(12, 20, 34, 0.96);
-    --panel-2: rgba(16, 28, 46, 0.98);
-    --panel-soft: rgba(255, 255, 255, 0.03);
-    --panel-soft-2: rgba(255, 255, 255, 0.05);
-    --border: rgba(96, 128, 166, 0.22);
-    --border-strong: rgba(122, 156, 196, 0.34);
-    --text: #eaf2ff;
-    --muted: #8ea4c0;
-    --muted-2: #c8d6e8;
-    --accent: #3b82f6;
-    --accent-2: #1d4ed8;
-    --accent-soft: rgba(59, 130, 246, 0.14);
-    --success-soft: rgba(34, 197, 94, 0.14);
-    --warning-soft: rgba(245, 158, 11, 0.14);
-    --danger-soft: rgba(239, 68, 68, 0.14);
-    --purple-soft: rgba(59, 130, 246, 0.12);
-    --info-soft: rgba(59, 130, 246, 0.12);
-    --shadow: 0 16px 36px rgba(0, 0, 0, 0.30);
-    --radius: 16px;
-    --radius-sm: 12px;
-    --shell-max: 1580px;
-    --shell-pad: 10px;
-    --table-max-h: 58vh;
-}
+            --bg: #060b14;
+            --bg-2: #0a1322;
+            --bg-3: #0f1a2e;
+            --panel: rgba(12, 20, 34, 0.96);
+            --panel-soft: rgba(255, 255, 255, 0.03);
+            --panel-soft-2: rgba(255, 255, 255, 0.05);
+            --border: rgba(96, 128, 166, 0.22);
+            --border-strong: rgba(122, 156, 196, 0.34);
+            --text: #eaf2ff;
+            --muted: #8ea4c0;
+            --muted-2: #c8d6e8;
+            --accent: #3b82f6;
+            --accent-soft: rgba(59, 130, 246, 0.14);
+            --success-soft: rgba(34, 197, 94, 0.14);
+            --warning-soft: rgba(245, 158, 11, 0.14);
+            --danger-soft: rgba(239, 68, 68, 0.14);
+            --info-soft: rgba(59, 130, 246, 0.12);
+            --shadow: 0 16px 36px rgba(0, 0, 0, 0.30);
+            --radius: 16px;
+            --table-max-h: 58vh;
+            --shell-max: 1580px;
+        }
 
         body.theme-light {
-    --bg: #eef4fb;
-    --bg-2: #e6eef8;
-    --bg-3: #dce7f5;
-    --panel: rgba(255, 255, 255, 0.97);
-    --panel-2: rgba(248, 251, 255, 0.98);
-    --panel-soft: rgba(15, 23, 42, 0.03);
-    --panel-soft-2: rgba(15, 23, 42, 0.05);
-    --border: rgba(15, 23, 42, 0.10);
-    --border-strong: rgba(15, 23, 42, 0.18);
-    --text: #0f172a;
-    --muted: #64748b;
-    --muted-2: #334155;
-    --accent: #2563eb;
-    --accent-2: #1d4ed8;
-    --accent-soft: rgba(37, 99, 235, 0.10);
-    --success-soft: rgba(34, 197, 94, 0.10);
-    --warning-soft: rgba(245, 158, 11, 0.12);
-    --danger-soft: rgba(239, 68, 68, 0.10);
-    --purple-soft: rgba(37, 99, 235, 0.10);
-    --info-soft: rgba(37, 99, 235, 0.10);
-    --shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
-}
+            --bg: #eef4fb;
+            --bg-2: #e6eef8;
+            --bg-3: #dce7f5;
+            --panel: rgba(255, 255, 255, 0.97);
+            --panel-soft: rgba(15, 23, 42, 0.03);
+            --panel-soft-2: rgba(15, 23, 42, 0.05);
+            --border: rgba(15, 23, 42, 0.10);
+            --border-strong: rgba(15, 23, 42, 0.18);
+            --text: #0f172a;
+            --muted: #64748b;
+            --muted-2: #334155;
+            --accent: #2563eb;
+            --accent-soft: rgba(37, 99, 235, 0.10);
+            --success-soft: rgba(34, 197, 94, 0.10);
+            --warning-soft: rgba(245, 158, 11, 0.12);
+            --danger-soft: rgba(239, 68, 68, 0.10);
+            --info-soft: rgba(37, 99, 235, 0.10);
+            --shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+        }
 
         body.compact {
-            --shell-pad: 8px;
-            --radius: 14px;
-            --radius-sm: 10px;
             --table-max-h: 60vh;
         }
 
@@ -70,29 +59,29 @@
         html { scroll-behavior: smooth; }
 
         body {
-    margin: 0;
-    min-height: 100vh;
-    color: var(--text);
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    letter-spacing: 0.2px;
-    background:
-        radial-gradient(circle at top left, rgba(59, 130, 246, 0.08), transparent 24%),
-        radial-gradient(circle at top right, rgba(29, 78, 216, 0.07), transparent 22%),
-        linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 48%, var(--bg-3) 100%);
-}
+            margin: 0;
+            min-height: 100vh;
+            color: var(--text);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            letter-spacing: 0.2px;
+            background:
+                radial-gradient(circle at top left, rgba(59, 130, 246, 0.08), transparent 24%),
+                radial-gradient(circle at top right, rgba(29, 78, 216, 0.07), transparent 22%),
+                linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 48%, var(--bg-3) 100%);
+        }
 
         body.theme-light {
-    background:
-        radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 24%),
-        radial-gradient(circle at top right, rgba(29, 78, 216, 0.06), transparent 24%),
-        linear-gradient(180deg, #f7fbff 0%, #eef4fb 50%, #e3edf7 100%);
-}
+            background:
+                radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 24%),
+                radial-gradient(circle at top right, rgba(29, 78, 216, 0.06), transparent 24%),
+                linear-gradient(180deg, #f7fbff 0%, #eef4fb 50%, #e3edf7 100%);
+        }
 
         .shell {
-    max-width: var(--shell-max);
-    margin: 0 auto;
-    padding: 14px;
-}
+            max-width: var(--shell-max);
+            margin: 0 auto;
+            padding: 14px;
+        }
 
         .toolbar {
             display: flex;
@@ -137,9 +126,9 @@
         }
 
         .btn-accent {
-    background: linear-gradient(180deg, rgba(59, 130, 246, 0.18), rgba(59, 130, 246, 0.08));
-    border-color: rgba(59, 130, 246, 0.24);
-}
+            background: linear-gradient(180deg, rgba(59, 130, 246, 0.18), rgba(59, 130, 246, 0.08));
+            border-color: rgba(59, 130, 246, 0.24);
+        }
 
         .panel {
             background: linear-gradient(180deg, var(--panel), rgba(255,255,255,0.01));
@@ -153,25 +142,25 @@
 
         .hero-grid {
             display: grid;
-            grid-template-columns: minmax(0, 1.55fr) minmax(270px, 0.72fr);
+            grid-template-columns: minmax(0, 1.6fr) minmax(300px, 0.72fr);
             gap: 10px;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             align-items: stretch;
         }
 
         .hero-panel {
-    padding: 18px 20px;
-    position: relative;
-}
+            padding: 18px 20px;
+            position: relative;
+        }
 
         .hero-panel::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background:
-        linear-gradient(120deg, rgba(59, 130, 246, 0.03), transparent 42%, rgba(29, 78, 216, 0.03));
-}
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background:
+                linear-gradient(120deg, rgba(59, 130, 246, 0.03), transparent 42%, rgba(29, 78, 216, 0.03));
+        }
 
         .eyebrow {
             display: inline-flex;
@@ -181,7 +170,7 @@
             border-radius: 999px;
             background: var(--accent-soft);
             color: var(--accent);
-            border: 1px solid rgba(36, 196, 255, 0.22);
+            border: 1px solid rgba(59, 130, 246, 0.22);
             font-size: 10px;
             font-weight: 900;
             letter-spacing: 0.08em;
@@ -211,8 +200,8 @@
             margin-top: 7px;
             color: var(--muted-2);
             font-size: 12px;
-            line-height: 1.5;
-            max-width: 780px;
+            line-height: 1.55;
+            max-width: 820px;
         }
 
         .hero-actions {
@@ -224,7 +213,7 @@
 
         .hero-mini-stats {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 10px;
             margin-top: 12px;
             position: relative;
@@ -257,11 +246,11 @@
         }
 
         .status-panel {
-    padding: 14px;
-    display: grid;
-    gap: 12px;
-    align-content: start;
-}
+            padding: 14px;
+            display: grid;
+            gap: 12px;
+            align-content: start;
+        }
 
         .status-card {
             border: 1px solid var(--border);
@@ -359,23 +348,23 @@
         }
 
         .kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-    gap: 12px;
-    margin-bottom: 12px;
-}
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 12px;
+        }
 
         .kpi {
-    border: 1px solid var(--border);
-    background: linear-gradient(180deg, var(--panel), rgba(255,255,255,0.01));
-    border-radius: 14px;
-    padding: 14px;
-    min-height: 102px;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg, var(--panel), rgba(255,255,255,0.01));
+            border-radius: 14px;
+            padding: 14px;
+            min-height: 102px;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
 
         .kpi-top {
             display: flex;
@@ -395,18 +384,19 @@
             flex: 0 0 auto;
         }
 
-        ..kpi-value {
-    margin-top: 8px;
-    font-size: clamp(20px, 2vw, 24px);
-    font-weight: 900;
-    line-height: 1;
-    word-break: break-word;
-    font-variant-numeric: tabular-nums;
-    color: #ffffff;
-}
-    body.theme-light .kpi-value {
-    color: #0f172a;
-}
+        .kpi-value {
+            margin-top: 8px;
+            font-size: clamp(20px, 2vw, 24px);
+            font-weight: 900;
+            line-height: 1;
+            word-break: break-word;
+            font-variant-numeric: tabular-nums;
+            color: #ffffff;
+        }
+
+        body.theme-light .kpi-value {
+            color: #0f172a;
+        }
 
         .kpi-label {
             margin-top: 5px;
@@ -428,14 +418,14 @@
         }
 
         .section-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 14px 16px 12px;
-    border-bottom: 1px solid var(--border);
-    flex-wrap: wrap;
-}
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 14px 16px 12px;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
 
         .section-title {
             font-size: 14px;
@@ -467,7 +457,7 @@
         }
 
         .table-wrap { max-height: var(--table-max-h); }
-        .mini-table-wrap { max-height: 32vh; }
+        .mini-table-wrap { max-height: 34vh; }
 
         .events-table,
         .mini-table {
@@ -475,45 +465,29 @@
             border-collapse: collapse;
         }
 
-        .events-table { min-width: 1180px; }
+        .events-table { min-width: 1320px; }
         .mini-table { min-width: 720px; }
 
-       th,
-       td {
-    text-align: left;
-    padding: 11px 10px;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-    vertical-align: top;
-    font-size: 11px;
-}
+        th, td {
+            text-align: left;
+            padding: 11px 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            vertical-align: top;
+            font-size: 11px;
+        }
 
         body.theme-light th,
         body.theme-light td {
             border-bottom: 1px solid rgba(15, 23, 42, 0.06);
         }
-        tr.severity-high td {
-    background: rgba(239, 68, 68, 0.08);
-}
 
-tr.severity-medium td {
-    background: rgba(245, 158, 11, 0.06);
-}
+        tr.severity-high td { background: rgba(239, 68, 68, 0.08); }
+        tr.severity-medium td { background: rgba(245, 158, 11, 0.06); }
+        tr.severity-low td { background: rgba(34, 197, 94, 0.03); }
 
-tr.severity-low td {
-    background: rgba(34, 197, 94, 0.03);
-}
-
-body.theme-light tr.severity-high td {
-    background: rgba(239, 68, 68, 0.06);
-}
-
-body.theme-light tr.severity-medium td {
-    background: rgba(245, 158, 11, 0.05);
-}
-
-body.theme-light tr.severity-low td {
-    background: rgba(34, 197, 94, 0.03);
-}
+        body.theme-light tr.severity-high td { background: rgba(239, 68, 68, 0.06); }
+        body.theme-light tr.severity-medium td { background: rgba(245, 158, 11, 0.05); }
+        body.theme-light tr.severity-low td { background: rgba(34, 197, 94, 0.03); }
 
         th {
             position: sticky;
@@ -542,7 +516,7 @@ body.theme-light tr.severity-low td {
             font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         }
 
-        .command {
+        .activity {
             min-width: 260px;
             max-width: 360px;
             white-space: normal;
@@ -603,40 +577,31 @@ body.theme-light tr.severity-low td {
             border-color: rgba(56,189,248,0.22);
         }
 
-        .badge-source-hybrid,
-        .badge-source-lstm,
-        .badge-source-command,
-        .badge-source-policy,
-        .badge-source-rules,
-        .badge-source-ciciot {
-            color: #d8b4fe;
-            background: var(--purple-soft);
-            border-color: rgba(124,92,255,0.22);
+        .badge-source-dl-model,
+        .badge-source-policy-override,
+        .badge-source-system {
+            color: #dbeafe;
+            background: rgba(59, 130, 246, 0.12);
+            border-color: rgba(59, 130, 246, 0.22);
         }
 
-        .badge-attack-normal,
-        .badge-attack-benign {
+        .badge-attack-benign,
+        .badge-attack-normal {
             color: #86efac;
             background: var(--success-soft);
             border-color: rgba(34,197,94,0.22);
         }
 
-        .badge-attack-reconnaissance,
-        .badge-attack-scan,
-        .badge-attack-web-attack {
-            color: #93c5fd;
-            background: var(--info-soft);
-            border-color: rgba(56,189,248,0.22);
-        }
-
-        .badge-attack-exploitation,
         .badge-attack-ddos,
         .badge-attack-dos,
+        .badge-attack-bot,
+        .badge-attack-botnet,
         .badge-attack-bruteforce,
-        .badge-attack-privilege-abuse,
-        .badge-attack-destructive-activity,
-        .badge-attack-credential-attack,
-        .badge-attack-botnet-activity {
+        .badge-attack-portscan,
+        .badge-attack-infiltration,
+        .badge-attack-webattack,
+        .badge-attack-web-attack,
+        .badge-attack-attack {
             color: #fca5a5;
             background: var(--danger-soft);
             border-color: rgba(239,68,68,0.22);
@@ -730,25 +695,21 @@ body.theme-light tr.severity-low td {
             line-height: 1.4;
         }
 
-        .detail-muted {
-            color: var(--muted);
-            font-weight: 700;
-        }
-
         .decision-hero {
-            border: 1px solid rgba(124, 92, 255, 0.22);
-            background: linear-gradient(180deg, rgba(124, 92, 255, 0.10), rgba(255,255,255,0.02));
+            border: 1px solid rgba(59, 130, 246, 0.22);
+            background: linear-gradient(180deg, rgba(59, 130, 246, 0.10), rgba(255,255,255,0.02));
             border-radius: 12px;
             padding: 12px;
         }
 
         .decision-hero-grid {
             display: grid;
-            grid-template-columns: 1.3fr 1fr 1fr 1fr;
+            grid-template-columns: 1.2fr 1fr 1fr 1fr;
             gap: 8px;
         }
 
-        .decision-hero-box {
+        .decision-hero-box,
+        .score-strip-box {
             border: 1px solid var(--border);
             background: var(--panel-soft);
             border-radius: 10px;
@@ -756,7 +717,8 @@ body.theme-light tr.severity-low td {
             min-width: 0;
         }
 
-        .decision-hero-label {
+        .decision-hero-label,
+        .score-strip-label {
             font-size: 9px;
             color: var(--muted);
             margin-bottom: 5px;
@@ -765,7 +727,8 @@ body.theme-light tr.severity-low td {
             font-weight: 800;
         }
 
-        .decision-hero-value {
+        .decision-hero-value,
+        .score-strip-value {
             font-size: 13px;
             font-weight: 900;
             line-height: 1.35;
@@ -778,44 +741,21 @@ body.theme-light tr.severity-low td {
             gap: 8px;
         }
 
-        .score-strip-box {
-            border: 1px solid var(--border);
-            background: var(--panel-soft);
-            border-radius: 10px;
-            padding: 10px;
-            text-align: left;
-        }
-
-        .score-strip-label {
-            font-size: 9px;
-            color: var(--muted);
-            margin-bottom: 5px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            font-weight: 800;
-        }
-
-        .score-strip-value {
-            font-size: 14px;
-            font-weight: 900;
-            line-height: 1.2;
-        }
-
-        .detail-command,
-        .alert-command {
+        .detail-activity,
+        .alert-activity {
             border: 1px solid var(--border);
             background: #091224;
             border-radius: 10px;
             padding: 12px;
         }
 
-        body.theme-light .detail-command,
-        body.theme-light .alert-command {
+        body.theme-light .detail-activity,
+        body.theme-light .alert-activity {
             background: rgba(226,232,240,0.55);
         }
 
-        .detail-command pre,
-        .alert-command pre {
+        .detail-activity pre,
+        .alert-activity pre {
             margin: 0;
             white-space: pre-wrap;
             word-break: break-word;
@@ -824,8 +764,8 @@ body.theme-light tr.severity-low td {
             color: #dbeafe;
         }
 
-        body.theme-light .detail-command pre,
-        body.theme-light .alert-command pre {
+        body.theme-light .detail-activity pre,
+        body.theme-light .alert-activity pre {
             color: #0f172a;
         }
 
@@ -839,7 +779,7 @@ body.theme-light tr.severity-low td {
             border: 1px solid var(--border);
             background: var(--panel-soft);
             border-radius: 12px;
-            padding: 10px 12px;
+            padding: 12px;
             min-width: 0;
         }
 
@@ -887,7 +827,7 @@ body.theme-light tr.severity-low td {
 
         .health-meta {
             display: grid;
-            gap: 4px;
+            gap: 5px;
             font-size: 11px;
             color: var(--muted);
             line-height: 1.45;
@@ -1044,8 +984,8 @@ body.theme-light tr.severity-low td {
         }
 
         @media (max-width: 1480px) {
-    .kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-}
+            .kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        }
 
         @media (max-width: 1240px) {
             .hero-grid,
@@ -1108,7 +1048,7 @@ body.theme-light tr.severity-low td {
                 align-items: stretch;
             }
 
-            .command {
+            .activity {
                 min-width: 220px;
                 max-width: 260px;
             }
@@ -1132,9 +1072,9 @@ body.theme-light tr.severity-low td {
     <div class="shell">
         <div class="toolbar">
             <div class="toolbar-title">
-                <i class="fas fa-shield-virus"></i>
-                Cybersecurity monitoring workspace
-            </div>
+    <i class="fas fa-shield-virus"></i>
+    Honeypot Detection and Adaptive Response
+</div>
             <div class="toolbar-actions">
                 <button class="btn" id="theme-toggle-btn" type="button">
                     <i class="fas fa-moon"></i> Toggle Theme
@@ -1153,30 +1093,34 @@ body.theme-light tr.severity-low td {
                 </div>
 
                 <div class="hero-top">
-                    <div>
-                        <h1>Honeypot Dashboard</h1>
-                        <div class="hero-sub">
-                            Real-time SSH and web telemetry, hybrid threat scoring, explainable alerts, actor watchlisting, and model-backed security intelligence.
-                        </div>
-                    </div>
+    <div>
+        <h1>Honeypot Detection and Adaptive Response Dashboard</h1>
+        <div class="hero-sub">
+            Real-time honeypot monitoring with deep learning-based attack detection, threat scoring, severity analysis, and attacker tracking.
+        </div>
+    </div>
 
-                    <div class="hero-actions">
-                        <button class="btn btn-accent" id="scroll-stream-btn" type="button">
-                            <i class="fas fa-table-list"></i> Event Stream
-                        </button>
-                        <button class="btn" id="scroll-actors-btn" type="button">
-                            <i class="fas fa-user-secret"></i> Top Attackers
-                        </button>
-                    </div>
-                </div>
+    <div class="hero-actions">
+        <button class="btn btn-accent" id="scroll-stream-btn" type="button">
+            <i class="fas fa-table-list"></i> Event Stream
+        </button>
+        <button class="btn" id="scroll-actors-btn" type="button">
+            <i class="fas fa-user-secret"></i> Top Attackers
+        </button>
+    </div>
+</div>
 
                 <div class="hero-mini-stats">
                     <div class="mini-chip">
-                        <div class="label">Visible Feed Average</div>
+                        <div class="label">Average Threat</div>
                         <div class="value" id="summary-visible-avg-threat">{{ "%.3f"|format(avg_threat or 0) }}</div>
                     </div>
                     <div class="mini-chip">
-                        <div class="label">Global Policy Escalations</div>
+                        <div class="label">Attack Events</div>
+                        <div class="value" id="summary-attack-events">{{ attack_count or 0 }}</div>
+                    </div>
+                    <div class="mini-chip">
+                        <div class="label">Policy Escalations</div>
                         <div class="value" id="summary-global-policy-escalations">{{ policy_escalations or 0 }}</div>
                     </div>
                 </div>
@@ -1192,97 +1136,87 @@ body.theme-light tr.severity-low td {
                         </div>
                     </div>
                     <div class="status-value" id="live-count">{{ live_count or 0 }}</div>
-                    <div class="status-sub">Rows visible in the current stream</div>
+                    <div class="status-sub">Visible rows</div>
                 </div>
 
                 <div class="quick-grid">
-                    <div class="quick-stat">
-                        <div class="quick-label">Visible Rows</div>
-                        <div class="quick-value" id="summary-visible-rows">{{ live_count or 0 }}</div>
-                        <div class="quick-note">Rendered now</div>
-                    </div>
-                    <div class="quick-stat">
-                        <div class="quick-label">Tracked Actors</div>
-                        <div class="quick-value" id="summary-tracked-actors">{{ bad_actors_count or 0 }}</div>
-                        <div class="quick-note">Persistent watchlist</div>
-                    </div>
-                    <div class="quick-stat">
-                        <div class="quick-label">Visible High</div>
-                        <div class="quick-value" id="summary-visible-high">{{ visible_high or 0 }}</div>
-                        <div class="quick-note">Current stream only</div>
-                    </div>
-                    <div class="quick-stat">
-                        <div class="quick-label">Socket</div>
-                        <div class="quick-value" id="ws-short-status">OFF</div>
-                        <div class="quick-note">Connection state</div>
-                    </div>
-                </div>
+
+    <div class="quick-stat">
+        <div class="quick-label">Policy State</div>
+        <div class="quick-value" id="summary-policy-state">NORMAL</div>
+        <div class="quick-note">Response state</div>
+    </div>
+
+    <div class="quick-stat">
+        <div class="quick-label">Visible High</div>
+        <div class="quick-value" id="summary-visible-high">{{ visible_high or 0 }}</div>
+        <div class="quick-note">Current stream only</div>
+    </div>
+
+    <div class="quick-stat">
+        <div class="quick-label">Socket</div>
+        <div class="quick-value" id="ws-short-status">OFF</div>
+        <div class="quick-note">Connection state</div>
+    </div>
+</div>
             </div>
         </section>
 
         <section class="kpi-grid">
-            <div class="kpi">
-                <div class="kpi-top">
-                    <div class="kpi-icon" style="color: #fbbf24;"><i class="fas fa-database"></i></div>
-                </div>
-                <div class="kpi-value" id="kpi-total-events">{{ total_events or 0 }}</div>
-                <div class="kpi-label">Total Events</div>
-            </div>
-
-            <div class="kpi">
-                <div class="kpi-top">
-                    <div class="kpi-icon" style="color: #22c55e;"><i class="fas fa-terminal"></i></div>
-                </div>
-                <div class="kpi-value" id="kpi-ssh-events">{{ ssh_count or 0 }}</div>
-                <div class="kpi-label">SSH Events</div>
-            </div>
-
-            <div class="kpi">
-                <div class="kpi-top">
-                    <div class="kpi-icon" style="color: #8b5cf6;"><i class="fas fa-globe"></i></div>
-                </div>
-                <div class="kpi-value" id="kpi-web-events">{{ web_count or 0 }}</div>
-                <div class="kpi-label">Web Events</div>
-            </div>
-            
-            <div class="kpi">
-    <div class="kpi-top">
-        <div class="kpi-icon" style="color: #38bdf8;"><i class="fas fa-network-wired"></i></div>
+    <div class="kpi">
+        <div class="kpi-top">
+            <div class="kpi-icon" style="color: #fbbf24;"><i class="fas fa-database"></i></div>
+        </div>
+        <div class="kpi-value" id="kpi-total-events">{{ total_events or 0 }}</div>
+        <div class="kpi-label">Total Events</div>
     </div>
-    <div class="kpi-value" id="kpi-network-events">{{ network_count or 0 }}</div>
-    <div class="kpi-label">Network Events</div>
-</div>
 
-            <div class="kpi">
-                <div class="kpi-top">
-                    <div class="kpi-icon" style="color: #ef4444;"><i class="fas fa-triangle-exclamation"></i></div>
-                </div>
-                <div class="kpi-value" id="kpi-high-severity">{{ high_count or 0 }}</div>
-                <div class="kpi-label">High Severity</div>
-            </div>
+    <div class="kpi">
+        <div class="kpi-top">
+            <div class="kpi-icon" style="color: #38bdf8;"><i class="fas fa-network-wired"></i></div>
+        </div>
+        <div class="kpi-value" id="kpi-network-events">{{ network_count or 0 }}</div>
+        <div class="kpi-label">Network Events</div>
+    </div>
 
-            <div class="kpi">
-                <div class="kpi-top">
-                    <div class="kpi-icon" style="color: #24c4ff;"><i class="fas fa-chart-line"></i></div>
-                </div>
-                <div class="kpi-value" id="kpi-average-threat">{{ "%.3f"|format(avg_threat or 0) }}</div>
-                <div class="kpi-label">Visible Average Threat</div>
-            </div>
+    <div class="kpi">
+        <div class="kpi-top">
+            <div class="kpi-icon" style="color: #ef4444;"><i class="fas fa-triangle-exclamation"></i></div>
+        </div>
+        <div class="kpi-value" id="kpi-high-severity">{{ high_count or 0 }}</div>
+        <div class="kpi-label">High Severity</div>
+    </div>
 
-            <div class="kpi">
-                <div class="kpi-top">
-                    <div class="kpi-icon" style="color: #f87171;"><i class="fas fa-user-secret"></i></div>
-                </div>
-                <div class="kpi-value" id="kpi-tracked-actors">{{ bad_actors_count or 0 }}</div>
-                <div class="kpi-label">Tracked Actors</div>
-            </div>
-        </section>
+    <div class="kpi">
+        <div class="kpi-top">
+            <div class="kpi-icon" style="color: #f97316;"><i class="fas fa-bug"></i></div>
+        </div>
+        <div class="kpi-value" id="kpi-attack-events">{{ attack_count or 0 }}</div>
+        <div class="kpi-label">Attack Events</div>
+    </div>
+
+    <div class="kpi">
+        <div class="kpi-top">
+            <div class="kpi-icon" style="color: #24c4ff;"><i class="fas fa-chart-line"></i></div>
+        </div>
+        <div class="kpi-value" id="kpi-average-threat">{{ "%.3f"|format(avg_threat or 0) }}</div>
+        <div class="kpi-label">Avg Threat</div>
+    </div>
+
+    <div class="kpi">
+        <div class="kpi-top">
+            <div class="kpi-icon" style="color: #f87171;"><i class="fas fa-user-secret"></i></div>
+        </div>
+        <div class="kpi-value" id="kpi-tracked-actors">{{ bad_actors_count or 0 }}</div>
+        <div class="kpi-label">Tracked Actors</div>
+    </div>
+</section>
 
         <section class="panel stream-section" id="event-stream-panel">
             <div class="section-head">
                 <div>
                     <div class="section-title">Live Event Stream</div>
-                    <div class="section-sub">Incoming sessions, hybrid decisions, severity output, and expandable explainable details.</div>
+                    <div class="section-sub">Incoming network events, model predictions, severity output, and operator-ready explainable details.</div>
                 </div>
                 <div class="section-actions">
                     <button class="btn" id="refresh-stats-btn" type="button"><i class="fas fa-rotate-right"></i> Refresh</button>
@@ -1296,56 +1230,51 @@ body.theme-light tr.severity-low td {
                         <tr>
                             <th>Time</th>
                             <th>Source IP</th>
-                            <th>Type</th>
-                            <th>Command / Activity</th>
+                            <th>Activity</th>
+                            <th>Predicted Class</th>
+                            <th>Confidence</th>
                             <th>Threat</th>
                             <th>Severity</th>
-                            <th>Attack Class</th>
-                            <th>Decision</th>
+                            <th>Action</th>
                             <th>Details</th>
                         </tr>
                     </thead>
                     <tbody id="events-tbody">
                         {% for event in events %}
+                        {% set predicted_class = event.predicted_class or event.attack_class or 'UNKNOWN' %}
+{% set confidence = event.confidence if event.confidence is not none else 0 %}
+{% set activity = event.activity or '-' %}
                         <tr
-                            data-event-type="{{ event.event_type or 'ssh' }}"
+                            data-event-type="{{ event.event_type or 'network' }}"
                             data-severity="{{ event.severity or 'LOW' }}"
                             data-threat-score="{{ event.threat_score or 0 }}"
-                            data-lstm-score="{{ event.lstm_score or 0 }}"
-                            data-command-score="{{ event.command_score or 0 }}"
-                            data-ciciot-score="{{ event.ciciot_score or 0 }}"
-                            data-ciciot-confidence="{{ event.ciciot_confidence or 0 }}"
-                            data-ciciot-attack="{{ event.ciciot_attack or '' }}"
-                            data-source="{{ event.decision_source or 'rules' }}"
+                            data-confidence="{{ confidence or 0 }}"
+                            data-predicted-class="{{ predicted_class }}"
+                            data-source="{{ event.decision_source or 'single_dl_model' }}"
                             data-policy-escalated="{{ 'true' if event.policy_escalated else 'false' }}"
                             data-source-ip="{{ event.source_ip or '-' }}"
-                            data-command="{{ event.command or '-' }}"
-                            data-attack-class="{{ event.attack_class or 'normal' }}"
-                            data-reason="{{ event.reason or 'benign_activity' }}"
+                            data-activity="{{ activity }}"
+                            data-attack-class="{{ event.attack_class or predicted_class }}"
+                            data-reason="{{ event.reason or 'benign_network_activity' }}"
                             data-action-taken="{{ event.action_taken or 'logged' }}"
-                            data-lstm-session="{{ event.lstm_session or 'Unknown' }}"
                             data-base-severity="{{ event.base_severity or 'LOW' }}"
                             data-floor-severity="{{ event.floor_severity or 'LOW' }}"
-                            data-timestamp="{{ event.timestamp_formatted or '-' }}"
+                            data-timestamp="{{ event.timestamp_formatted or event.timestamp or '-' }}"
                         >
-                            <td class="mono">{{ event.timestamp_formatted or '-' }}</td>
-                            <td class="mono">{{ event.source_ip or '-' }}</td>
-                            <td>{{ (event.event_type or 'ssh')|upper }}</td>
-                            <td class="command mono" title="{{ event.command or '' }}">{{ event.command or '-' }}</td>
-                            <td class="score">{{ '%.3f'|format(event.threat_score or 0) }}</td>
-                            <td>
-                                {% set sev = (event.severity or 'LOW') %}
-                                <span class="badge badge-{{ sev|lower }}">{{ sev }}</span>
-                            </td>
-                            <td>
-                                {% set atk = (event.attack_class or 'normal') %}
-                                <span class="badge badge-attack-{{ atk|lower|replace(' ', '-')|replace('_','-') }}">{{ atk }}</span>
-                            </td>
-                            <td>
-                                {% set src = (event.decision_source or 'rules') %}
-                                <span class="badge badge-source-{{ src|lower|replace(' ', '-')|replace('_','-') }}">{{ src|upper }}</span>
-                            </td>
-                            <td>
+                            <td class="mono">{{ event.timestamp_formatted or event.timestamp or '-' }}</td>
+<td class="mono">{{ event.source_ip or '-' }}</td>
+<td class="activity mono" title="{{ activity }}">{{ activity }}</td>
+<td>
+    <span class="badge badge-attack-{{ predicted_class|lower|replace(' ', '-')|replace('_','-') }}">{{ predicted_class }}</span>
+</td>
+<td class="score">{{ '%.3f'|format(confidence or 0) }}</td>
+<td class="score">{{ '%.3f'|format(event.threat_score or 0) }}</td>
+<td>
+    {% set sev = (event.severity or 'LOW') %}
+    <span class="badge badge-{{ sev|lower }}">{{ sev }}</span>
+</td>
+<td>{{ event.action_taken or 'logged' }}</td>
+<td>
                                 <div class="row-actions">
                                     <button class="icon-btn detail-toggle-btn" type="button" title="View details">
                                         <i class="fas fa-chevron-down"></i>
@@ -1363,49 +1292,26 @@ body.theme-light tr.severity-low td {
             <div class="panel">
                 <div class="section-head">
                     <div>
-                        <div class="section-title">Model Health</div>
-                        <div class="section-sub">Runtime model loading state and hybrid scoring pipeline readiness.</div>
+                        <div class="section-title">Model Runtime</div>
+                        <div class="section-sub">Runtime state of the deployed CICIDS2017 deep learning inference pipeline and artifact loading status.</div>
                     </div>
                 </div>
 
                 <div class="health-list">
                     <div class="health-card">
                         <div class="health-top">
-                            <div class="health-name"><i class="fas fa-brain"></i> LSTM Behavior Model</div>
-                            <div class="health-status {% if lstm_info and lstm_info.status == 'loaded' %}status-ok{% else %}status-warn{% endif %}">
-                                {{ lstm_info.status if lstm_info else 'unknown' }}
+                            <div class="health-name"><i class="fas fa-brain"></i> Deployed Deep Learning Runtime</div>
+                            <div class="health-status {% if dl_info and dl_info.status == 'loaded' %}status-ok{% else %}status-warn{% endif %}">
+                                {{ dl_info.status if dl_info else 'unknown' }}
                             </div>
                         </div>
                         <div class="health-meta">
-                            <div><strong>Version:</strong> {{ lstm_info.version if lstm_info else '-' }}</div>
-                            <div><strong>Accuracy:</strong> {{ lstm_info.accuracy if lstm_info and lstm_info.accuracy is defined else '-' }}</div>
-                            <div><strong>Classes:</strong> {{ lstm_info.classes if lstm_info and lstm_info.classes is defined else '-' }}</div>
-                        </div>
-                    </div>
-
-                    <div class="health-card">
-                        <div class="health-top">
-                            <div class="health-name"><i class="fas fa-network-wired"></i> CICIoT Classifier</div>
-                            <div class="health-status {% if ciciot_info and ciciot_info.status == 'loaded' %}status-ok{% else %}status-warn{% endif %}">
-                                {{ ciciot_info.status if ciciot_info else 'unknown' }}
-                            </div>
-                        </div>
-                        <div class="health-meta">
-                            <div><strong>Version:</strong> {{ ciciot_info.version if ciciot_info else '-' }}</div>
-                            <div><strong>Features:</strong> {{ ciciot_info.features_count if ciciot_info and ciciot_info.features_count is defined else '-' }}</div>
-                            <div><strong>Type:</strong> {{ ciciot_info.type if ciciot_info else '-' }}</div>
-                        </div>
-                    </div>
-
-                    <div class="health-card">
-                        <div class="health-top">
-                            <div class="health-name"><i class="fas fa-layer-group"></i> Fusion Engine</div>
-                            <div class="health-status status-ok">active</div>
-                        </div>
-                        <div class="health-meta">
-                            <div><strong>Pipeline:</strong> Command + LSTM + CICIoT</div>
-                            <div><strong>Outputs:</strong> Threat, severity, action</div>
-                            <div><strong>Alerts:</strong> WebSocket live notifications</div>
+                            <div><strong>Model Type:</strong> {{ dl_info.type if dl_info else '-' }}</div>
+                            <div><strong>Feature Count:</strong> {{ dl_info.feature_count if dl_info and dl_info.feature_count is defined else '-' }}</div>
+                            <div><strong>Classes:</strong> {{ dl_info.class_names|length if dl_info and dl_info.class_names is defined else '-' }}</div>
+                            <div><strong>Model Path:</strong> {{ dl_info.model_path if dl_info and dl_info.model_path is defined else '-' }}</div>
+                            <div><strong>Scaler Path:</strong> {{ dl_info.scaler_path if dl_info and dl_info.scaler_path is defined else '-' }}</div>
+                            <div><strong>Encoder Path:</strong> {{ dl_info.label_encoder_path if dl_info and dl_info.label_encoder_path is defined else '-' }}</div>
                         </div>
                     </div>
                 </div>
@@ -1415,7 +1321,7 @@ body.theme-light tr.severity-low td {
                 <div class="section-head">
                     <div>
                         <div class="section-title">Top Attackers</div>
-                        <div class="section-sub">Highest-risk sources ranked by maximum threat score and enforcement state.</div>
+                        <div class="section-sub">Highest-risk sources ranked by maximum threat score and current enforcement state.</div>
                     </div>
                     <div class="badge badge-high">
                         <i class="fas fa-user-secret"></i>
@@ -1468,7 +1374,7 @@ body.theme-light tr.severity-low td {
             <div class="alert-head">
                 <div>
                     <div class="alert-title">High Severity Alert</div>
-                    <div class="alert-sub">Real-time escalation triggered by hybrid scoring or severity floor enforcement.</div>
+                    <div class="alert-sub">Real-time escalation triggered by the deployed deep learning detection and policy enforcement pipeline.</div>
                 </div>
                 <button class="close-btn" id="close-alert-btn" type="button"><i class="fas fa-xmark"></i></button>
             </div>
@@ -1480,20 +1386,24 @@ body.theme-light tr.severity-low td {
                         <div class="alert-v mono" id="alert-ip">-</div>
                     </div>
                     <div class="alert-kv">
-                        <div class="alert-k">Severity</div>
-                        <div class="alert-v" id="alert-severity">-</div>
+                        <div class="alert-k">Predicted Class</div>
+                        <div class="alert-v" id="alert-predicted-class">-</div>
+                    </div>
+                    <div class="alert-kv">
+                        <div class="alert-k">Confidence</div>
+                        <div class="alert-v" id="alert-confidence">0.000</div>
                     </div>
                     <div class="alert-kv">
                         <div class="alert-k">Threat Score</div>
                         <div class="alert-v" id="alert-score">0.000</div>
                     </div>
                     <div class="alert-kv">
-                        <div class="alert-k">Decision Source</div>
-                        <div class="alert-v" id="alert-source">-</div>
+                        <div class="alert-k">Severity</div>
+                        <div class="alert-v" id="alert-severity">-</div>
                     </div>
                     <div class="alert-kv">
-                        <div class="alert-k">Attack Class</div>
-                        <div class="alert-v" id="alert-attack-class">-</div>
+                        <div class="alert-k">Decision Source</div>
+                        <div class="alert-v" id="alert-source">-</div>
                     </div>
                     <div class="alert-kv">
                         <div class="alert-k">Reason</div>
@@ -1507,30 +1417,15 @@ body.theme-light tr.severity-low td {
                         <div class="alert-k">Policy Escalated</div>
                         <div class="alert-v" id="alert-policy-escalated">-</div>
                     </div>
-                </div>
-
-                <div class="alert-grid">
-                    <div class="alert-kv">
-                        <div class="alert-k">LSTM Score</div>
-                        <div class="alert-v" id="alert-lstm-score">0.000</div>
-                    </div>
-                    <div class="alert-kv">
-                        <div class="alert-k">Command Score</div>
-                        <div class="alert-v" id="alert-command-score">0.000</div>
-                    </div>
-                    <div class="alert-kv">
-                        <div class="alert-k">CICIoT</div>
-                        <div class="alert-v" id="alert-ciciot-summary">Not available</div>
-                    </div>
                     <div class="alert-kv">
                         <div class="alert-k">Base / Floor Severity</div>
                         <div class="alert-v" id="alert-severity-breakdown">-</div>
                     </div>
                 </div>
 
-                <div class="alert-command">
-                    <div class="alert-k">Command / Activity</div>
-                    <pre id="alert-command">-</pre>
+                <div class="alert-activity">
+                    <div class="alert-k">Activity</div>
+                    <pre id="alert-activity">-</pre>
                 </div>
             </div>
         </div>
@@ -1577,16 +1472,20 @@ body.theme-light tr.severity-low td {
                 });
 
                 document.getElementById('theme-toggle-btn')?.addEventListener('click', () => {
-    document.body.classList.toggle('theme-light');
-    localStorage.setItem(
-        this.themeKey,
-        document.body.classList.contains('theme-light') ? 'light' : 'dark'
-    );
-    this.updateThemeButtonLabel();
-});
+                    document.body.classList.toggle('theme-light');
+                    localStorage.setItem(
+                        this.themeKey,
+                        document.body.classList.contains('theme-light') ? 'light' : 'dark'
+                    );
+                    this.updateThemeButtonLabel();
+                });
+
                 document.getElementById('density-toggle-btn')?.addEventListener('click', () => {
                     document.body.classList.toggle('compact');
-                    localStorage.setItem(this.compactKey, document.body.classList.contains('compact') ? 'compact' : 'comfortable');
+                    localStorage.setItem(
+                        this.compactKey,
+                        document.body.classList.contains('compact') ? 'compact' : 'comfortable'
+                    );
                     this.updateDensityButtonLabel();
                 });
 
@@ -1764,13 +1663,22 @@ body.theme-light tr.severity-low td {
             }
 
             attackClass(attack) {
-                const key = String(attack || 'normal').toLowerCase().replace(/[\s_]+/g, '-');
+                const key = String(attack || 'unknown').toLowerCase().replace(/[\s_]+/g, '-');
                 return `badge badge-attack-${key}`;
             }
 
-            sourceClass(source) {
-                const key = String(source || 'rules').toLowerCase().replace(/[\s_]+/g, '-');
-                return `badge badge-source-${key}`;
+            mapDecisionSource(value) {
+                const key = String(value || 'single_dl_model').toLowerCase();
+                if (key === 'single_dl_model') return 'DL Model';
+                if (key === 'policy') return 'Policy Override';
+                return this.prettifyToken(key);
+            }
+
+            sourceClass(value) {
+                const key = String(value || 'system').toLowerCase();
+                if (key === 'single_dl_model') return 'badge badge-source-dl-model';
+                if (key === 'policy') return 'badge badge-source-policy-override';
+                return 'badge badge-source-system';
             }
 
             escapeHtml(value) {
@@ -1787,68 +1695,28 @@ body.theme-light tr.severity-low td {
                 return now.toLocaleTimeString([], { hour12: false });
             }
 
-            hasCiciotData(row) {
-                const score = this.num(row.dataset.ciciotScore, 0);
-                const conf = this.num(row.dataset.ciciotConfidence, 0);
-                const attack = String(row.dataset.ciciotAttack || '').trim();
-                return score > 0 || conf > 0 || attack.length > 0;
-            }
-
-            buildCiciotSummary(row) {
-                if (!this.hasCiciotData(row)) {
-                    return {
-                        scoreHtml: '<span class="detail-muted">Not available for this event</span>',
-                        confidenceHtml: '<span class="detail-muted">Not available for this event</span>',
-                        attackHtml: '<span class="detail-muted">No CICIoT features provided</span>'
-                    };
-                }
-
-                const attack = row.dataset.ciciotAttack || '-';
-                const score = this.formatScore(row.dataset.ciciotScore);
-                const confidence = this.formatScore(row.dataset.ciciotConfidence);
-
-                return {
-                    scoreHtml: `<span class="${this.getScoreClass(row.dataset.ciciotScore)}">${score}</span>`,
-                    confidenceHtml: confidence,
-                    attackHtml: this.escapeHtml(attack)
-                };
-            }
-
             buildDetailsHtml(row) {
                 const severity = String(row.dataset.severity || 'LOW').toUpperCase();
-                const attackClass = row.dataset.attackClass || 'normal';
-                const source = String(row.dataset.source || 'rules').toUpperCase();
-                const command = row.dataset.command || '-';
-                const eventType = String(row.dataset.eventType || 'ssh').toUpperCase();
+                const predictedClass = row.dataset.predictedClass || 'UNKNOWN';
+                const source = row.dataset.source || 'single_dl_model';
+                const activity = row.dataset.activity || '-';
+                const eventType = String(row.dataset.eventType || 'network').toUpperCase();
                 const sourceIp = row.dataset.sourceIp || '-';
                 const actionTaken = row.dataset.actionTaken || 'logged';
-                const lstmSession = row.dataset.lstmSession || 'Unknown';
                 const policyEscalated = row.dataset.policyEscalated === 'true' ? 'Yes' : 'No';
-                const reason = row.dataset.reason || 'benign_activity';
-                const ciciot = this.buildCiciotSummary(row);
-
-                const decisionLabel = source === 'COMMAND'
-                    ? 'Command Rules'
-                    : source === 'LSTM'
-                    ? 'LSTM Model'
-                    : source === 'HYBRID'
-                    ? 'Hybrid Fusion'
-                    : source === 'CICIOT'
-                    ? 'CICIoT Model'
-                    : source === 'POLICY'
-                    ? 'Policy Override'
-                    : source;
+                const reason = row.dataset.reason || 'benign_network_activity';
+                const decisionLabel = this.mapDecisionSource(source);
 
                 return `
                     <div class="details-panel">
                         <div class="details-topline">
                             <span class="badge badge-reason">${this.escapeHtml(this.prettifyToken(reason))}</span>
                             <span class="${this.sourceClass(source)}">${this.escapeHtml(decisionLabel)}</span>
-                            <span class="${this.attackClass(attackClass)}">${this.escapeHtml(attackClass)}</span>
+                            <span class="${this.attackClass(predictedClass)}">${this.escapeHtml(predictedClass)}</span>
                             <span class="badge ${this.sevClass(severity)}">${this.escapeHtml(severity)}</span>
                         </div>
 
-                        <div class="details-section-title">Why This Decision</div>
+                        <div class="details-section-title">Decision Summary</div>
                         <div class="decision-hero">
                             <div class="decision-hero-grid">
                                 <div class="decision-hero-box">
@@ -1860,8 +1728,8 @@ body.theme-light tr.severity-low td {
                                     <div class="decision-hero-value">${this.escapeHtml(decisionLabel)}</div>
                                 </div>
                                 <div class="decision-hero-box">
-                                    <div class="decision-hero-label">Attack Class</div>
-                                    <div class="decision-hero-value">${this.escapeHtml(attackClass)}</div>
+                                    <div class="decision-hero-label">Predicted Class</div>
+                                    <div class="decision-hero-value">${this.escapeHtml(predictedClass)}</div>
                                 </div>
                                 <div class="decision-hero-box">
                                     <div class="decision-hero-label">Action Taken</div>
@@ -1870,55 +1738,35 @@ body.theme-light tr.severity-low td {
                             </div>
                         </div>
 
-                        <div class="details-section-title">Score Breakdown</div>
+                        <div class="details-section-title">Scores</div>
                         <div class="score-strip">
+                            <div class="score-strip-box">
+                                <div class="score-strip-label">Confidence</div>
+                                <div class="score-strip-value ${this.getScoreClass(row.dataset.confidence)}">${this.formatScore(row.dataset.confidence)}</div>
+                            </div>
                             <div class="score-strip-box">
                                 <div class="score-strip-label">Threat Score</div>
                                 <div class="score-strip-value ${this.getScoreClass(row.dataset.threatScore)}">${this.formatScore(row.dataset.threatScore)}</div>
                             </div>
                             <div class="score-strip-box">
-                                <div class="score-strip-label">LSTM Score</div>
-                                <div class="score-strip-value ${this.getScoreClass(row.dataset.lstmScore)}">${this.formatScore(row.dataset.lstmScore)}</div>
+                                <div class="score-strip-label">Base Severity</div>
+                                <div class="score-strip-value">${this.escapeHtml(String(row.dataset.baseSeverity || 'LOW').toUpperCase())}</div>
                             </div>
                             <div class="score-strip-box">
-                                <div class="score-strip-label">Command Score</div>
-                                <div class="score-strip-value ${this.getScoreClass(row.dataset.commandScore)}">${this.formatScore(row.dataset.commandScore)}</div>
-                            </div>
-                            <div class="score-strip-box">
-                                <div class="score-strip-label">LSTM Session</div>
-                                <div class="score-strip-value">${this.escapeHtml(lstmSession)}</div>
+                                <div class="score-strip-label">Floor Severity</div>
+                                <div class="score-strip-value">${this.escapeHtml(String(row.dataset.floorSeverity || 'LOW').toUpperCase())}</div>
                             </div>
                         </div>
 
-                        <div class="details-section-title">CICIoT Context</div>
+                        <div class="details-section-title">Event Context</div>
                         <div class="details-grid">
                             <div class="detail-box">
-                                <div class="detail-k">CICIoT Score</div>
-                                <div class="detail-v">${ciciot.scoreHtml}</div>
-                            </div>
-                            <div class="detail-box">
-                                <div class="detail-k">CICIoT Confidence</div>
-                                <div class="detail-v">${ciciot.confidenceHtml}</div>
-                            </div>
-                            <div class="detail-box">
-                                <div class="detail-k">CICIoT Attack</div>
-                                <div class="detail-v">${ciciot.attackHtml}</div>
+                                <div class="detail-k">Source IP</div>
+                                <div class="detail-v mono">${this.escapeHtml(sourceIp)}</div>
                             </div>
                             <div class="detail-box">
                                 <div class="detail-k">Event Type</div>
                                 <div class="detail-v">${this.escapeHtml(eventType)}</div>
-                            </div>
-                        </div>
-
-                        <div class="details-section-title">Severity Logic</div>
-                        <div class="details-grid">
-                            <div class="detail-box">
-                                <div class="detail-k">Base Severity</div>
-                                <div class="detail-v">${this.escapeHtml(String(row.dataset.baseSeverity || 'LOW').toUpperCase())}</div>
-                            </div>
-                            <div class="detail-box">
-                                <div class="detail-k">Floor Severity</div>
-                                <div class="detail-v">${this.escapeHtml(String(row.dataset.floorSeverity || 'LOW').toUpperCase())}</div>
                             </div>
                             <div class="detail-box">
                                 <div class="detail-k">Policy Escalated</div>
@@ -1930,29 +1778,9 @@ body.theme-light tr.severity-low td {
                             </div>
                         </div>
 
-                        <div class="details-section-title">Event Context</div>
-                        <div class="details-grid">
-                            <div class="detail-box">
-                                <div class="detail-k">Source IP</div>
-                                <div class="detail-v mono">${this.escapeHtml(sourceIp)}</div>
-                            </div>
-                            <div class="detail-box">
-                                <div class="detail-k">Severity</div>
-                                <div class="detail-v">${this.escapeHtml(severity)}</div>
-                            </div>
-                            <div class="detail-box">
-                                <div class="detail-k">Telemetry Type</div>
-                                <div class="detail-v">${this.escapeHtml(eventType)}</div>
-                            </div>
-                            <div class="detail-box">
-                                <div class="detail-k">Pipeline Mode</div>
-                                <div class="detail-v">Command + LSTM + CICIoT</div>
-                            </div>
-                        </div>
-
-                        <div class="detail-command">
-                            <div class="detail-k">Command / Activity</div>
-                            <pre>${this.escapeHtml(command)}</pre>
+                        <div class="detail-activity">
+                            <div class="detail-k">Activity</div>
+                            <pre>${this.escapeHtml(activity)}</pre>
                         </div>
                     </div>
                 `;
@@ -1983,24 +1811,30 @@ body.theme-light tr.severity-low td {
             }
 
             applyScoreClassToRow(row) {
-    if (!row || row.classList.contains('details-row')) return;
+                if (!row || row.classList.contains('details-row')) return;
 
-    const threatCell = row.cells[4];
-    if (threatCell) {
-        threatCell.className = `score ${this.getScoreClass(row.dataset.threatScore)}`;
-    }
+                const confidenceCell = row.cells[4];
+                const threatCell = row.cells[5];
 
-    row.classList.remove('severity-low', 'severity-medium', 'severity-high');
-    const sev = String(row.dataset.severity || 'LOW').toUpperCase();
+                if (confidenceCell) {
+                    confidenceCell.className = `score ${this.getScoreClass(row.dataset.confidence)}`;
+                }
 
-    if (sev === 'HIGH') {
-        row.classList.add('severity-high');
-    } else if (sev === 'MEDIUM') {
-        row.classList.add('severity-medium');
-    } else {
-        row.classList.add('severity-low');
-    }
-}
+                if (threatCell) {
+                    threatCell.className = `score ${this.getScoreClass(row.dataset.threatScore)}`;
+                }
+
+                row.classList.remove('severity-low', 'severity-medium', 'severity-high');
+                const sev = String(row.dataset.severity || 'LOW').toUpperCase();
+
+                if (sev === 'HIGH') {
+                    row.classList.add('severity-high');
+                } else if (sev === 'MEDIUM') {
+                    row.classList.add('severity-medium');
+                } else {
+                    row.classList.add('severity-low');
+                }
+            }
 
             addEventRow(event) {
                 const tbody = document.getElementById('events-tbody');
@@ -2009,51 +1843,44 @@ body.theme-light tr.severity-low td {
                 const row = document.createElement('tr');
                 row.classList.add('new-row');
 
-                const time = event.timestamp_formatted || this.formatTimeNow();
+                const time = event.timestamp_formatted || event.timestamp || this.formatTimeNow();
                 const ip = event.source_ip || event.ip || '-';
-                const eventType = String(event.event_type || 'ssh').toLowerCase();
-                const command = event.command || '-';
+                const eventType = String(event.event_type || 'network').toLowerCase();
+                const activity = event.activity || '-';
+const predictedClass = event.predicted_class || event.attack_class || 'UNKNOWN';
+const confidence = this.num(event.confidence, 0);
                 const severity = String(event.severity || 'LOW').toUpperCase();
-                const source = String(event.decision_source || 'rules').toLowerCase();
-                const attackClass = event.attack_class || 'normal';
+                const source = String(event.decision_source || 'single_dl_model').toLowerCase();
                 const threatScore = this.num(event.threat_score, 0);
-                const lstmScore = this.num(event.lstm_score, 0);
-                const commandScore = this.num(event.command_score, 0);
-                const ciciotScore = this.num(event.ciciot_score, 0);
-                const ciciotConfidence = this.num(event.ciciot_confidence, 0);
                 const policyEscalated = Boolean(event.policy_escalated);
-                const reason = event.reason || 'benign_activity';
+                const reason = event.reason || 'benign_network_activity';
 
                 row.dataset.eventType = eventType;
                 row.dataset.severity = severity;
                 row.dataset.threatScore = threatScore;
-                row.dataset.lstmScore = lstmScore;
-                row.dataset.commandScore = commandScore;
-                row.dataset.ciciotScore = ciciotScore;
-                row.dataset.ciciotConfidence = ciciotConfidence;
-                row.dataset.ciciotAttack = event.ciciot_attack || '';
+                row.dataset.confidence = confidence;
+                row.dataset.predictedClass = predictedClass;
                 row.dataset.source = source;
                 row.dataset.policyEscalated = policyEscalated ? 'true' : 'false';
                 row.dataset.sourceIp = ip;
-                row.dataset.command = command;
-                row.dataset.attackClass = attackClass;
+                row.dataset.activity = activity;
+                row.dataset.attackClass = event.attack_class || predictedClass;
                 row.dataset.reason = reason;
                 row.dataset.actionTaken = event.action_taken || 'logged';
-                row.dataset.lstmSession = event.lstm_session || 'Unknown';
                 row.dataset.baseSeverity = event.base_severity || 'LOW';
                 row.dataset.floorSeverity = event.floor_severity || 'LOW';
                 row.dataset.timestamp = time;
 
                 row.innerHTML = `
-                    <td class="mono">${this.escapeHtml(time)}</td>
-                    <td class="mono">${this.escapeHtml(ip)}</td>
-                    <td>${this.escapeHtml(eventType.toUpperCase())}</td>
-                    <td class="command mono" title="${this.escapeHtml(command)}">${this.escapeHtml(command)}</td>
-                    <td class="score ${this.getScoreClass(threatScore)}">${this.formatScore(threatScore)}</td>
-                    <td><span class="badge ${this.sevClass(severity)}">${this.escapeHtml(severity)}</span></td>
-                    <td><span class="${this.attackClass(attackClass)}">${this.escapeHtml(attackClass)}</span></td>
-                    <td><span class="${this.sourceClass(source)}">${this.escapeHtml(source.toUpperCase())}</span></td>
-                    <td>
+    <td class="mono">${this.escapeHtml(time)}</td>
+    <td class="mono">${this.escapeHtml(ip)}</td>
+    <td class="activity mono" title="${this.escapeHtml(activity)}">${this.escapeHtml(activity)}</td>
+    <td><span class="${this.attackClass(predictedClass)}">${this.escapeHtml(predictedClass)}</span></td>
+    <td class="score ${this.getScoreClass(confidence)}">${this.formatScore(confidence)}</td>
+    <td class="score ${this.getScoreClass(threatScore)}">${this.formatScore(threatScore)}</td>
+    <td><span class="badge ${this.sevClass(severity)}">${this.escapeHtml(severity)}</span></td>
+    <td>${this.escapeHtml(event.action_taken || 'logged')}</td>
+    <td>
                         <div class="row-actions">
                             <button class="icon-btn detail-toggle-btn" type="button" title="View details">
                                 <i class="fas fa-chevron-down"></i>
@@ -2095,7 +1922,6 @@ body.theme-light tr.severity-low td {
                 const topActors = actors.slice(0, 5);
                 const topActor = topActors.length > 0 ? topActors[0] : null;
 
-                this.setText('summary-tracked-actors', actorCount);
                 this.setText('bad-actors-badge-count', actorCount);
                 this.setText('kpi-tracked-actors', actorCount);
 
@@ -2123,7 +1949,7 @@ body.theme-light tr.severity-low td {
                         <td><span class="mono">${this.escapeHtml(actor.ip)}</span></td>
                         <td class="score ${this.getScoreClass(actor.maxThreat)}">${this.formatScore(actor.maxThreat)}</td>
                         <td>${this.escapeHtml(this.num(actor.highAlerts, 0))}</td>
-                        <td><span class="${this.attackClass(actor.lastAttack)}">${this.escapeHtml(actor.lastAttack || 'normal')}</span></td>
+                        <td><span class="${this.attackClass(actor.lastAttack)}">${this.escapeHtml(actor.lastAttack || 'UNKNOWN')}</span></td>
                         <td><span class="badge ${this.sevClass(actor.latestSeverity)}">${this.escapeHtml(String(actor.latestSeverity || 'LOW').toUpperCase())}</span></td>
                         <td><span class="${this.enforcementClass(actor.enforcement)}">${this.escapeHtml(actor.enforcement || 'monitor')}</span></td>
                     </tr>
@@ -2145,26 +1971,14 @@ body.theme-light tr.severity-low td {
 
     let visibleTotal = rows.length;
     let visibleHigh = 0;
-    let visibleSsh = 0;
-    let visibleWeb = 0;
-    let visibleNetwork = 0;
     let avgThreatSum = 0;
 
     rows.forEach((row) => {
         const severity = String(row.dataset.severity || 'LOW').toUpperCase();
         const threat = this.num(row.dataset.threatScore, 0);
-        const eventType = String(row.dataset.eventType || 'ssh').toLowerCase();
 
         if (severity === 'HIGH') {
             visibleHigh += 1;
-        }
-
-        if (eventType === 'ssh') {
-            visibleSsh += 1;
-        } else if (eventType === 'web') {
-            visibleWeb += 1;
-        } else if (eventType === 'network') {
-            visibleNetwork += 1;
         }
 
         avgThreatSum += threat;
@@ -2178,22 +1992,28 @@ body.theme-light tr.severity-low td {
     this.setText('live-count', visibleTotal);
     this.setFormattedThreat('summary-visible-avg-threat', avgThreat);
     this.setFormattedThreat('kpi-average-threat', avgThreat);
-
-    this.setText('kpi-total-events', visibleTotal);
-    this.setText('kpi-ssh-events', visibleSsh);
-    this.setText('kpi-web-events', visibleWeb);
-    this.setText('kpi-network-events', visibleNetwork);
-    this.setText('kpi-high-severity', visibleHigh);
 }
+
             updateGlobalKpisFromStats(data) {
+    const totalEvents = this.getFirstNumber(data, ['total_events']);
+    const networkEvents = this.getFirstNumber(data, ['network_count']);
+    const highCount = this.getFirstNumber(data, ['high_count']);
+    const attackCount = this.getFirstNumber(data, ['attack_count']);
     const badActorsCount = this.getFirstNumber(data, ['bad_actors_count', 'tracked_actors', 'actors_count']);
     const policyEscalations = this.getFirstNumber(data, ['policy_escalations']);
 
+    this.setText('kpi-total-events', totalEvents);
+    this.setText('kpi-network-events', networkEvents);
+    this.setText('kpi-high-severity', highCount);
+    this.setText('kpi-attack-events', attackCount);
     this.setText('kpi-tracked-actors', badActorsCount);
 
+    this.setText('summary-attack-events', attackCount);
     this.setText('summary-global-policy-escalations', policyEscalations);
-    this.setText('summary-tracked-actors', badActorsCount);
     this.setText('bad-actors-badge-count', badActorsCount);
+
+    const policyState = policyEscalations > 0 ? 'ACTIVE' : 'NORMAL';
+    this.setText('summary-policy-state', policyState);
 }
 
             async fetchGlobalStats() {
@@ -2212,7 +2032,7 @@ body.theme-light tr.severity-low td {
                             maxThreat: this.getFirstNumber(actor, ['max_threat_score', 'max_threat', 'threat_score']),
                             highAlerts: this.getFirstNumber(actor, ['high_alerts', 'alerts', 'high_count']),
                             latestSeverity: String(actor.latest_severity || actor.severity || 'LOW').toUpperCase(),
-                            lastAttack: actor.last_attack || actor.attack_class || 'normal',
+                            lastAttack: actor.last_attack || actor.attack_class || 'UNKNOWN',
                             enforcement: actor.enforcement || actor.action_taken || 'monitor'
                         });
                     });
@@ -2227,27 +2047,21 @@ body.theme-light tr.severity-low td {
                 const overlay = document.getElementById('alert-overlay');
                 if (!overlay) return;
 
-                const ciciotScore = this.num(event.ciciot_score, 0);
-                const ciciotConfidence = this.num(event.ciciot_confidence, 0);
-                const ciciotAttack = String(event.ciciot_attack || '').trim();
-                const hasCiciot = ciciotScore > 0 || ciciotConfidence > 0 || ciciotAttack.length > 0;
+                const predictedClass = event.predicted_class || event.attack_class || 'UNKNOWN';
+const confidence = this.num(event.confidence, 0);
 
                 document.getElementById('alert-ip').textContent = event.source_ip || event.ip || '-';
+                document.getElementById('alert-predicted-class').textContent = predictedClass;
+                document.getElementById('alert-confidence').textContent = this.formatScore(confidence);
                 document.getElementById('alert-severity').textContent = String(event.severity || 'HIGH').toUpperCase();
                 document.getElementById('alert-score').textContent = this.formatScore(event.threat_score);
-                document.getElementById('alert-source').textContent = String(event.decision_source || 'rules').toUpperCase();
-                document.getElementById('alert-attack-class').textContent = event.attack_class || 'normal';
-                document.getElementById('alert-reason').textContent = this.prettifyToken(event.reason || 'benign_activity');
+                document.getElementById('alert-source').textContent = this.mapDecisionSource(event.decision_source || 'single_dl_model');
+                document.getElementById('alert-reason').textContent = this.prettifyToken(event.reason || 'benign_network_activity');
                 document.getElementById('alert-action').textContent = event.action_taken || 'alerted';
                 document.getElementById('alert-policy-escalated').textContent = event.policy_escalated ? 'Yes' : 'No';
-                document.getElementById('alert-lstm-score').textContent = this.formatScore(event.lstm_score);
-                document.getElementById('alert-command-score').textContent = this.formatScore(event.command_score);
-                document.getElementById('alert-ciciot-summary').textContent = hasCiciot
-                    ? `${this.formatScore(event.ciciot_score)} / ${this.formatScore(event.ciciot_confidence)} / ${event.ciciot_attack || '-'}`
-                    : 'Not available for this event';
                 document.getElementById('alert-severity-breakdown').textContent =
                     `${String(event.base_severity || 'LOW').toUpperCase()} / ${String(event.floor_severity || 'LOW').toUpperCase()}`;
-                document.getElementById('alert-command').textContent = event.command || '-';
+                document.getElementById('alert-activity').textContent = event.activity || '-';
 
                 overlay.style.display = 'flex';
             }
@@ -2264,4 +2078,3 @@ body.theme-light tr.severity-low td {
     </script>
 </body>
 </html>
-  

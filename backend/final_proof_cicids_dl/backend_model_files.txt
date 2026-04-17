@@ -1,0 +1,5 @@
+Final deployed model artifacts:
+- backend/app/models_dl/cicids_dl_model.keras
+- backend/app/models_dl/scaler.pkl
+- backend/app/models_dl/label_encoder.pkl
+- backend/app/models_dl/dl_metadata.json
